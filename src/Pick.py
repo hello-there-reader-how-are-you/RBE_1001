@@ -10,8 +10,8 @@ brain=Brain()
 controller_1 = Controller(PRIMARY)
 arm_motor = Motor(Ports.PORT3, GearSetting.RATIO_18_1, False)
 hand_motor = Motor(Ports.PORT5, GearSetting.RATIO_18_1, False)
-left_motor = Motor(Ports.PORT1, GearSetting.RATIO_18_1, False)
-right_motor = Motor(Ports.PORT2, GearSetting.RATIO_18_1, False)
+left_motor = Motor(Ports.PORT2, GearSetting.RATIO_18_1, False)
+right_motor = Motor(Ports.PORT9, GearSetting.RATIO_18_1, False)
 
 
 # wait for rotation sensor to fully initialize
