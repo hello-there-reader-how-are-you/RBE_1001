@@ -82,19 +82,15 @@ current_state = IDLE
 cameraInterval = 50
 cameraTimer = Timer()
 
-TOO_CLOSE_HEIGHT = 150
-STOP_HEIGHT = 25
-APPROACH_HEIGHT = 60
+REACH = 50
 
-
-# ---------------------------
 def handleButton():
     global current_state
     if current_state == IDLE:
         print('IDLE -> SEARCHING')
         current_state = SEARCHING
-        left_motor.spin(FORWARD)
-        right_motor.spin(FORWARD)
+        left_motor.spin(FORWARD, 40)
+        right_motor.spin(FORWARD, 40)
         cameraTimer.event(cameraTimerCallback, cameraInterval)
     else:
         print(' -> IDLE')
@@ -104,7 +100,7 @@ def handleButton():
 
 controller_1.buttonB.pressed(handleButton)
 
-# ---------------------------
+
 def cameraTimerCallback():
     global current_state
 
@@ -115,37 +111,31 @@ def cameraTimerCallback():
 
     if all_fruits:
         fruit_detect(all_fruits[0])
+        current_state = APPROACHING
     else:
-        if current_state == SEARCHING:
-            left_motor.spin(REVERSE, 30)
+        if current_state = SEARCHING:
+            left_motor.spin(FORWARD, 30)
             right_motor.spin(FORWARD, 30)
-
-    if current_state != IDLE:
-        cameraTimer.event(cameraTimerCallback, cameraInterval)
-
+    cameraTimer.event(cameraTimerCallback, cameraInterval)
 
 def fruit_detect(fruit):
     global current_state
-
+    
     cx = fruit.centerX
     cy = fruit.centerY
     Height = fruit.height
 
-
     # Display
-
+    brain.screen.clear_screen()
     if fruit.exists: 
-
         if fruit.id == 1:
             color_name = "Green"   
-
-
         elif fruit.id == 2: 
             color_name = "Purple"
-
         elif fruit.id == 3: 
             color_name = "Orange"
             
+        brain.screen.clear_screen()
         brain.screen.set_cursor(2, 2)
         brain.screen.print("Detected:" + color_name)
         brain.screen.next_row()
@@ -154,41 +144,29 @@ def fruit_detect(fruit):
         brain.screen.print("cX:", fruit.centerX)
         brain.screen.next_row()   
         brain.screen.print("cY:", fruit.centerY)
-        wait(2, SECONDS)
-        brain.screen.clear_screen()
+        brain.screen.next_row()
+        brain.screen.print("State", current_state)
+        
+        wait(100, MSEC)
 
-    else:
-        brain.screen.print("Maybe Tree -> avoid")
-        if cx < 160:
-            left_motor.spin(FORWARD, 15)
-            right_motor.spin(REVERSE, 15)
-        else:
-            left_motor.spin(REVERSE, 15)
-            right_motor.spin(FORWARD, 15)
-        return
+       
+        K_speed = 0.4 
+        size_error = REACH - Height
+        base_speed = K_speed * size_error
+        base_speed = min(max(base_speed, -30) 30)
+        target_x = 160
+        K_x = 0.5
+        error = cx - target_x
+        turn_effort = K_x * error
 
-    # Distance control
-    if STOP_HEIGHT <= Height < TOO_CLOSE_HEIGHT:
+    left_motor.spin(FORWARD, base_speed - turn_effort)
+    right_motor.spin(FORWARD, base_speed + turn_effort) 
+
+    if abs(size_error) < 3: 
         left_motor.stop()
         right_motor.stop()
-        return
+        brain.screen.print("READY TO PICK FRUIT")
+        
 
-    if Height >= TOO_CLOSE_HEIGHT:
-        left_motor.spin_for(FORWARD, 20)
-        right_motor.spin_for(FORWARD, 20)
-        return
 
-    # Steering
-    target_x = 160
-    K_x = 0.5
-    error = cx - target_x
-    turn_effort = K_x * error
-
-    base_speed = 60 if Height < APPROACH_HEIGHT else 20
-
-    left_motor.spin(REVERSE, base_speed - turn_effort)
-    right_motor.spin(REVERSE, base_speed + turn_effort)
-
-    # Update state
-    if current_state == SEARCHING:
-        current_state = APPROACHING
+   
