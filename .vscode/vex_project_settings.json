@@ -12,7 +12,11 @@
 		"slot": 1,
 		"sdkVersion": "V5_1_0_1_25",
 		"python": {
+<<<<<<< HEAD
 			"main": "src/grip.py"
+=======
+			"main": "src/Reference_and_Ignore/t.py"
+>>>>>>> 82a36aa95053a54e95689343c8b6efa9475152d3
 		}
 	}
 }
