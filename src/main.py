@@ -23,8 +23,8 @@ brain=Brain()
 imu = Inertial(Ports.PORT13)
 imu.calibrate()
 
-left_motor = Motor(Ports.PORT4, GearSetting.RATIO_18_1, True)
-right_motor = Motor(Ports.PORT10, GearSetting.RATIO_18_1, False)
+left_motor = Motor(Ports.PORT2, GearSetting.RATIO_18_1, True)
+right_motor = Motor(Ports.PORT9, GearSetting.RATIO_18_1, False)
 
 Left_Sonar = Sonar(brain.three_wire_port.g)
 Left_Sonar.distance(MM)
