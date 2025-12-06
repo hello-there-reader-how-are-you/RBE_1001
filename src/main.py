@@ -47,7 +47,7 @@ wait(2, SECONDS)
 print("Start")
 
 
-def Approach_Fruitful_Tree():
+def Approach_Fruit():
     #Drive Towards Tree
     K_speed = 0.4
     size_error = REACH - Height
