@@ -47,25 +47,31 @@ wait(2, SECONDS)
 print("Start")
 
 
-def Approach_Fruit():
-    #Drive Towards Tree
-    K_speed = 0.4
-    size_error = REACH - Height
-    base_speed = K_speed * size_error
-    base_speed = clamp(-30, base_speed, 30)
-    target_x = 160
-    K_x = 0.5
-    error = cx - target_x
-    turn_effort = K_x * error
+def Approach_Fruit(fruit):
+    while True:
+        cx = fruit.centerX
+        cy = fruit.centerY
+        Height = fruit.height
 
-    left_motor.spin(FORWARD, base_speed - turn_effort)
-    right_motor.spin(FORWARD, base_speed + turn_effort) 
 
-    if abs(size_error) < 3: 
-        left_motor.stop()
-        right_motor.stop()
-        brain.screen.print("READY TO PICK FRUIT")
-        Pick_Fruit()
+        #Drive Towards Tree
+        K_speed = 0.4
+        size_error = REACH - Height
+        base_speed = K_speed * size_error
+        base_speed = clamp(-30, base_speed, 30)
+        target_x = 160
+        K_x = 0.5
+        error = cx - target_x
+        turn_effort = K_x * error
+
+        left_motor.spin(FORWARD, base_speed - turn_effort)
+        right_motor.spin(FORWARD, base_speed + turn_effort) 
+
+        if abs(size_error) < 3: 
+            left_motor.stop()
+            right_motor.stop()
+            brain.screen.print("READY TO PICK FRUIT")
+            Pick_Fruit()
 
 def Pick_Fruit():
     while hand_motor.torque() < 10:  
@@ -90,6 +96,7 @@ def scroll(theta):
 
 #Idle:
 while True:
+    """
     #Drive Fowards & Keep Dist. From wall
     daedalus_wall_dist = clamp(0, Left_Sonar.distance(MM), 300)
     #print(daedalus_wall_dist-TARGET_WALL_DISTANCE)
@@ -119,16 +126,14 @@ while True:
         right_motor.spin_for(FORWARD, 180, DEGREES, DRIVE_SPEED)
         while -scroll(imu.heading()) <= 90: #90 Degree Turn
             right_motor.spin(FORWARD, DRIVE_MAX)
-        
-
+    """
+ 
     #Detect Fruit
-        all_fruits = []
-        all_fruits.extend(eye.take_snapshot(eye__Green))
-        all_fruits.extend(eye.take_snapshot(eye__Orange))
-        all_fruits.extend(eye.take_snapshot(eye__Purple))
+    all_fruits = [] #[AiVisionObject]
+    all_fruits.extend(eye.take_snapshot(eye__Green))
+    all_fruits.extend(eye.take_snapshot(eye__Orange))
+    all_fruits.extend(eye.take_snapshot(eye__Purple))
 
-        if all_fruits:
-            fruit = all_fruits[0]
-            cx = fruit.centerX
-            cy = fruit.centerY
-            Height = fruit.height
+    if all_fruits:
+        all_fruits.sort(key=lambda fruit: fruit.height)
+        Approach_Fruit(all_fruits[0])
