@@ -149,11 +149,11 @@ while True:
                 error = cx - target_x
                 turn_effort = K_x * error
 
-            left_motor.spin(FORWARD, base_speed - turn_effort)
-            right_motor.spin(FORWARD, base_speed + turn_effort) 
+                left_motor.spin(FORWARD, base_speed - turn_effort)
+                right_motor.spin(FORWARD, base_speed + turn_effort) 
 
-            if abs(size_error) < 3: 
-                left_motor.stop()
-                right_motor.stop()
-                brain.screen.print("READY TO PICK FRUIT")
-                Pick_Fruit()
+                if abs(size_error) < 3: 
+                    left_motor.stop()
+                    right_motor.stop()
+                    brain.screen.print("READY TO PICK FRUIT")
+                    Pick_Fruit()
