@@ -49,12 +49,27 @@ print("Start")
 
 def Approach_Fruitful_Tree():
     #Drive Towards Tree
-    Pick_Fruit()
+    K_speed = 0.4
+    size_error = REACH - Height
+    base_speed = K_speed * size_error
+    base_speed = clamp(-30, base_speed, 30)
+    target_x = 160
+    K_x = 0.5
+    error = cx - target_x
+    turn_effort = K_x * error
+
+    left_motor.spin(FORWARD, base_speed - turn_effort)
+    right_motor.spin(FORWARD, base_speed + turn_effort) 
+
+    if abs(size_error) < 3: 
+        left_motor.stop()
+        right_motor.stop()
+        brain.screen.print("READY TO PICK FRUIT")
+        Pick_Fruit()
 
 def Pick_Fruit():
-    #code
-    if succsessful:
-        Drive_To_Basket()
+    while hand_motor.torque() < 10:  
+        hand_motor.spin(FORWARD)
 
 def Drive_To_Basket():
     if failure:
@@ -71,9 +86,6 @@ def scroll(theta):
     theta = ((theta-180)**2)**0.5 - 180
     return theta
 
-def grip():
-    while hand_motor.torque() < 10:  
-        hand_motor.spin(FORWARD)
 
 
 #Idle:
@@ -120,31 +132,3 @@ while True:
             cx = fruit.centerX
             cy = fruit.centerY
             Height = fruit.height
-
-            # Display
-            brain.screen.clear_screen()
-            if fruit.exists: 
-                if fruit.id == 1:
-                    color_name = "Green"   
-                elif fruit.id == 2: 
-                    color_name = "Purple"
-                elif fruit.id == 3: 
-                    color_name = "Orange"
-            
-                K_speed = 0.4
-                size_error = REACH - Height
-                base_speed = K_speed * size_error
-                base_speed = clamp(-30, base_speed, 30)
-                target_x = 160
-                K_x = 0.5
-                error = cx - target_x
-                turn_effort = K_x * error
-
-                left_motor.spin(FORWARD, base_speed - turn_effort)
-                right_motor.spin(FORWARD, base_speed + turn_effort) 
-
-                if abs(size_error) < 3: 
-                    left_motor.stop()
-                    right_motor.stop()
-                    brain.screen.print("READY TO PICK FRUIT")
-                    Pick_Fruit()
