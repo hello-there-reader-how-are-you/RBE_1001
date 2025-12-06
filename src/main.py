@@ -31,6 +31,15 @@ Left_Sonar.distance(MM)
 Front_Sonar = Sonar(brain.three_wire_port.a)
 Front_Sonar.distance(MM)
 
+# AI Vision Color Descriptions
+REACH = 50
+
+eye__Green = Colordesc(1, 64, 227, 108, 10, 0.2)
+eye__Purple = Colordesc(2, 153, 104, 159, 10, 0.2)
+eye__Orange = Colordesc(3, 244, 120, 91, 10, 0.2)
+# AI Vision Code Descriptions
+eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_TAGS, AiVision.ALL_AIOBJS)
+
 wait(2, SECONDS)
 print("Start")
 
@@ -95,8 +104,56 @@ while True:
             right_motor.spin(FORWARD, DRIVE_MAX)
         
 
-    #Detect Tree
-
     #Detect Fruit
-    
-    pass
+        all_fruits = []
+        all_fruits.extend(eye.take_snapshot(eye__Green))
+        all_fruits.extend(eye.take_snapshot(eye__Orange))
+        all_fruits.extend(eye.take_snapshot(eye__Purple))
+
+        if all_fruits:
+            fruit = all_fruits[0]
+            cx = fruit.centerX
+            cy = fruit.centerY
+            Height = fruit.height
+
+            # Display
+            brain.screen.clear_screen()
+            if fruit.exists: 
+                if fruit.id == 1:
+                    color_name = "Green"   
+                elif fruit.id == 2: 
+                    color_name = "Purple"
+                elif fruit.id == 3: 
+                    color_name = "Orange"
+                    
+                brain.screen.clear_screen()
+                brain.screen.set_cursor(2, 2)
+                brain.screen.print("Detected:" + color_name)
+                brain.screen.next_row()
+                brain.screen.print("Height:", fruit.height) 
+                brain.screen.next_row()
+                brain.screen.print("cX:", fruit.centerX)
+                brain.screen.next_row()   
+                brain.screen.print("cY:", fruit.centerY)
+                brain.screen.next_row()
+                
+                wait(100, MSEC)
+
+            
+                K_speed = 0.4 
+                size_error = REACH - Height
+                base_speed = K_speed * size_error
+                base_speed = clamp(-30, base_speed, 30)
+                target_x = 160
+                K_x = 0.5
+                error = cx - target_x
+                turn_effort = K_x * error
+
+            left_motor.spin(FORWARD, base_speed - turn_effort)
+            right_motor.spin(FORWARD, base_speed + turn_effort) 
+
+            if abs(size_error) < 3: 
+                left_motor.stop()
+                right_motor.stop()
+                brain.screen.print("READY TO PICK FRUIT")
+                Pick_Fruit()
