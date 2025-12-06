@@ -2,7 +2,7 @@
 #                                                                              #
 # 	Module:       main.py                                                      #
 # 	Author:       alexandertheofilou                                           #
-# 	Created:      11/23/2025, 11:09:04 AM                                       #
+# 	Created:      11/23/2025, 11:09:04 AM                                      #
 # 	Description:  V5 project                                                   #
 #                                                                              #
 # ---------------------------------------------------------------------------- #
@@ -68,8 +68,11 @@ def scroll(theta):
     theta = ((theta-180)**2)**0.5 - 180
     return theta
 
+def grip():
+    while hand_motor.torque() < 10:  
+        hand_motor.spin(FORWARD)
 
-
+hand_motor.spin(FORWARD) 
 
 #Idle:
 while True:
