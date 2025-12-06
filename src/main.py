@@ -25,6 +25,9 @@ imu.calibrate()
 
 left_motor = Motor(Ports.PORT2, GearSetting.RATIO_18_1, True)
 right_motor = Motor(Ports.PORT9, GearSetting.RATIO_18_1, False)
+hand_motor = Motor(Ports.PORT17, GearSetting.RATIO_18_1, False)
+arm_motor = Motor(Ports.PORT21, GearSetting.RATIO_18_1, False)
+
 
 Left_Sonar = Sonar(brain.three_wire_port.g)
 Left_Sonar.distance(MM)
@@ -72,7 +75,6 @@ def grip():
     while hand_motor.torque() < 10:  
         hand_motor.spin(FORWARD)
 
-hand_motor.spin(FORWARD) 
 
 #Idle:
 while True:

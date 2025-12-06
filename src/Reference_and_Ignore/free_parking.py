@@ -7,22 +7,12 @@ import math
 brain=Brain()
 
 # Robot configuration code
-# AI Classification Classroom Element IDs
-class ClassroomElements:
-    BLUE_BALL = 0
-    GREEN_BALL = 1
-    RED_BALL = 2
-    BLUE_RING = 3
-    GREEN_RING = 4
-    RED_RING = 5
-    BLUE_CUBE = 6
-    GREEN_CUBE = 7
-    RED_CUBE = 8
 controller_1 = Controller(PRIMARY)
 arm_motor = Motor(Ports.PORT21, GearSetting.RATIO_18_1, False)
 hand_motor = Motor(Ports.PORT11, GearSetting.RATIO_18_1, False)
 left_motor = Motor(Ports.PORT10, GearSetting.RATIO_18_1, False)
 right_motor = Motor(Ports.PORT1, GearSetting.RATIO_18_1, False)
+
 # AI Vision Color Descriptions
 eye__Green = Colordesc(1, 64, 227, 108, 10, 0.2)
 eye__Purple = Colordesc(2, 153, 104, 159, 10, 0.2)
@@ -35,42 +25,9 @@ eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_
 wait(30, MSEC)
 
 
-# Make random actually random
-def initializeRandomSeed():
-    wait(100, MSEC)
-    random = brain.battery.voltage(MV) + brain.battery.current(CurrentUnits.AMP) * 100 + brain.timer.system_high_res()
-    urandom.seed(int(random))
-      
-# Set random seed 
-initializeRandomSeed()
-
-
-def play_vexcode_sound(sound_name):
-    # Helper to make playing sounds from the V5 in VEXcode easier and
-    # keeps the code cleaner by making it clear what is happening.
-    print("VEXPlaySound:" + sound_name)
-    wait(5, MSEC)
-
-# add a small delay to make sure we don't print in the middle of the REPL header
-wait(200, MSEC)
-# clear the console to make sure we don't have the REPL in the console
-print("\033[2J")
-
-#endregion VEXcode Generated Robot Configuration
-
-# ------------------------------------------
-# 
-# 	Project:      VEXcode Project
-#	Author:       VEX
-#	Created:
-#	Description:  VEXcode V5 Python Project
-# 
-# ------------------------------------------
-
 # Library imports
 from vex import *
 
-# Begin project code
 
 # States 
 IDLE = 0 
@@ -170,3 +127,17 @@ def fruit_detect(fruit):
 
 
    
+
+
+
+
+                brain.screen.clear_screen()
+                brain.screen.set_cursor(2, 2)
+                brain.screen.print("Detected:" + color_name)
+                brain.screen.next_row()
+                brain.screen.print("Height:", fruit.height) 
+                brain.screen.next_row()
+                brain.screen.print("cX:", fruit.centerX)
+                brain.screen.next_row()   
+                brain.screen.print("cY:", fruit.centerY)
+                brain.screen.next_row()
