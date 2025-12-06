@@ -125,22 +125,8 @@ while True:
                     color_name = "Purple"
                 elif fruit.id == 3: 
                     color_name = "Orange"
-                    
-                brain.screen.clear_screen()
-                brain.screen.set_cursor(2, 2)
-                brain.screen.print("Detected:" + color_name)
-                brain.screen.next_row()
-                brain.screen.print("Height:", fruit.height) 
-                brain.screen.next_row()
-                brain.screen.print("cX:", fruit.centerX)
-                brain.screen.next_row()   
-                brain.screen.print("cY:", fruit.centerY)
-                brain.screen.next_row()
-                
-                wait(100, MSEC)
-
             
-                K_speed = 0.4 
+                K_speed = 0.4
                 size_error = REACH - Height
                 base_speed = K_speed * size_error
                 base_speed = clamp(-30, base_speed, 30)
