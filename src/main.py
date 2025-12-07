@@ -46,6 +46,23 @@ eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_
 wait(2, SECONDS)
 print("Start")
 
+def clamp(low, val, high):
+    return max(min(val, high), low)
+
+def scroll(theta):
+    theta = ((theta-180)**2)**0.5 - 180
+    return theta
+
+def detect_fruits():
+    all_fruits = [] #[AiVisionObject]
+    all_fruits.extend(eye.take_snapshot(eye__Green))
+    all_fruits.extend(eye.take_snapshot(eye__Orange))
+    all_fruits.extend(eye.take_snapshot(eye__Purple))
+    if all_fruits:
+        all_fruits.sort(key=lambda fruit: fruit.height) # Sorts fruit by hieght, analogus to distance
+    return all_fruits
+
+
 
 def Approach_Fruit(fruit):
     while True:
@@ -85,14 +102,6 @@ def Drive_To_Basket():
 def Deposit_Fruit_In_Basket():
     pass
 
-def clamp(low, val, high):
-    return max(min(val, high), low)
-
-def scroll(theta):
-    theta = ((theta-180)**2)**0.5 - 180
-    return theta
-
-
 
 #Idle:
 while True:
@@ -129,11 +138,9 @@ while True:
     """
  
     #Detect Fruit
-    all_fruits = [] #[AiVisionObject]
-    all_fruits.extend(eye.take_snapshot(eye__Green))
-    all_fruits.extend(eye.take_snapshot(eye__Orange))
-    all_fruits.extend(eye.take_snapshot(eye__Purple))
+    fruits = detect_fruits()
+    if fruits:
+        Approach_Fruit(fruits[0])
 
-    if all_fruits:
-        all_fruits.sort(key=lambda fruit: fruit.height)
-        Approach_Fruit(all_fruits[0])
+    if (fruits := detect_fruits()):
+        Approach_Fruit(fruits[0])
