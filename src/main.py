@@ -15,7 +15,8 @@ TARGET_WALL_DISTANCE = 150 #mm
 DRIVE_SPEED = 80 #RPM
 DRIVE_MAX = 1.5*DRIVE_SPEED
 DRIVE_MIN = 0.5*DRIVE_SPEED
-Drive_PGain = 0.1*5
+Wall_PGain = 0.1*5
+Arm_PGain = 1
 
 # Brain should be defined by default
 brain=Brain()
@@ -34,8 +35,8 @@ Left_Sonar.distance(MM)
 Front_Sonar = Sonar(brain.three_wire_port.a)
 Front_Sonar.distance(MM)
 
-# AI Vision Color Descriptions
-REACH = 50
+X_RESOLUTION = 320
+Y_RESOLUTION = 240
 
 eye__Green = Colordesc(1, 64, 227, 108, 10, 0.2)
 eye__Purple = Colordesc(2, 153, 104, 159, 10, 0.2)
@@ -63,36 +64,43 @@ def detect_fruits():
     return all_fruits
 
 
-
-def Approach_Fruit(fruit):
+def Approach_Fruit():
     while True:
-        cx = fruit.centerX
-        cy = fruit.centerY
-        Height = fruit.height
+        if (fruits := detect_fruits()):
+            fruit = fruits[0]
+            cx = fruit.centerX
+            cy = fruit.centerY
+            height = fruit.height
 
+            #Drive Towards Tree
+            K_speed = 0.4
+            target_x = (1/2) * X_Resolution
+            target_y = (3/4) * Y_Resolution
+            K_x = 0.5
+            error = cx - target_x
+            turn_effort = K_x * error
 
-        #Drive Towards Tree
-        K_speed = 0.4
-        size_error = REACH - Height
-        base_speed = K_speed * size_error
-        base_speed = clamp(-30, base_speed, 30)
-        target_x = 160
-        K_x = 0.5
-        error = cx - target_x
-        turn_effort = K_x * error
+            left_motor.spin(FORWARD, DRIVE_SPEED - turn_effort)
+            right_motor.spin(FORWARD, DRIVE_SPEED + turn_effort) 
 
-        left_motor.spin(FORWARD, base_speed - turn_effort)
-        right_motor.spin(FORWARD, base_speed + turn_effort) 
-
-        if abs(size_error) < 3: 
-            left_motor.stop()
-            right_motor.stop()
-            brain.screen.print("READY TO PICK FRUIT")
-            Pick_Fruit()
+            if height > 100: #This is a MAGIC NUMBER --- Will need to Be adjusted!!!
+                left_motor.stop()
+                right_motor.stop()
+                brain.screen.print("READY TO PICK FRUIT")
+                Pick_Fruit()
 
 def Pick_Fruit():
-    while hand_motor.torque() < 10:  
-        hand_motor.spin(FORWARD)
+    while True:
+        if (fruits := detect_fruits()):
+            fruit = fruits[0]
+            cx = fruit.centerX
+            cy = fruit.centerY
+
+
+
+
+        while hand_motor.torque() < 10:  
+            hand_motor.spin(FORWARD)
 
 def Drive_To_Basket():
     if failure:
@@ -111,12 +119,12 @@ while True:
     #print(daedalus_wall_dist-TARGET_WALL_DISTANCE)
     if (daedalus_wall_dist > TARGET_WALL_DISTANCE):
         #print("FAR")
-        left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Drive_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
-        right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Drive_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
+        left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
+        right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
     else:
         #print("CLOSE")
-        left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Drive_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
-        right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Drive_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
+        left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
+        right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
 
 
     #Detect Wall: T turn left
@@ -138,9 +146,5 @@ while True:
     """
  
     #Detect Fruit
-    fruits = detect_fruits()
-    if fruits:
-        Approach_Fruit(fruits[0])
-
     if (fruits := detect_fruits()):
-        Approach_Fruit(fruits[0])
+        Approach_Fruit()
