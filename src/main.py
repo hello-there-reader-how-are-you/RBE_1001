@@ -181,7 +181,7 @@ def fruit_detect(fruit):
             current_state = GRABBING
             left_motor.stop()
             right_motor.stop()
-
+            # Insert Pick_Fruit Here 
 
 def Pick_Fruit():
     while True:
@@ -246,3 +246,4 @@ while True:
     if (fruits := detect_fruits()):
 
         Approach_Fruit()
+
