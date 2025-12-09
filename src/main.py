@@ -44,12 +44,13 @@ eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_
 
 # Begin Code 
 # Define States
-IDLE = 0 
-SEARCHING = 1
-APPROACHING = 2
-GRABBING = 3
-DELLIVERING = 4
-RELEASING = 5
+
+IDLE: Nothing
+Searching_Fruit: Wall following + Looking for Fruit
+Approaching Fruit: Drive Towards Fruit
+Pick Fruit: Pick Fruit
+Searching_Basket: Wall following + Looking for Basket
+Deposit_Fruit: Release Fruit into Basket
 
 # Initialize State
 current_state = IDLE
@@ -93,9 +94,9 @@ def checkForLostObject():
 
 def handleLostObject():
     global current_state
-    if current_state == APPROACHING:
+    if current_state == APPROACHING_FRUIT:
         print('APPROACHING -> SEARCHING')
-        current_state = SEARCHING
+        current_state = SEARCHING_FRUIT
         left_motor.spin(FORWARD, 30)
         right_motor.spin(FORWARD, -30)
 
@@ -119,11 +120,11 @@ def fruit_detect(fruit):
     print("Fruit detected at X:", cx, " Y:", cy, " Width:", fruit.width, " Height:", fruit.height)
     print("Fruit:", fruit_name)
     
-    if(current_state == SEARCHING):
+    if(current_state == SEARCHING_FRUIT):
         print('SEARCHING -> APPROACHING')
-        current_state = APPROACHING
+        current_state = APPROACHING_FRUIT
     
-    if current_state == APPROACHING:
+    if current_state == APPROACHING_FRUIT:
        
         target_x = 160  
         error = cx - target_x  
@@ -140,7 +141,7 @@ def fruit_detect(fruit):
 
         if abs(error) < 10 and fruit.height > 105:
             print('APPROACHING -> GRABBING')
-            current_state = GRABBING
+            current_state = PICK_FRUIT
             left_motor.stop()
             right_motor.stop()
             Pick_Fruit()
@@ -160,7 +161,7 @@ def Deposit_Fruit_In_Basket():
 
 #Idle:
 cameraTimer.event(cameraTimerCallback, cameraInterval)
-current_state = SEARCHING
+current_state = SEARCHING_FRUIT
 while True:
     if (checkForLostObject()):
         handleLostObject()
@@ -197,4 +198,5 @@ while True:
 
  
     #Detect Fruit
+
 
