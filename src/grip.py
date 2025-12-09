@@ -3,11 +3,8 @@ from vex import *
 brain=Brain()
 
 # Robot configuration code
+arm_motor = Motor(Ports.PORT11, GearSetting.RATIO_18_1, False)
 hand_motor = Motor(Ports.PORT17, GearSetting.RATIO_18_1, False)
-
-#def pick_fruit():
-    #while CameraTesting() = true:
-        #
         
 def motorTourqe():
     while hand_motor.torque() < 10:  
@@ -15,5 +12,6 @@ def motorTourqe():
 
 hand_motor.spin(FORWARD)
 
-#def move-arm():
-    #put in the logic to move the arm up to where the fruit is based on TJ's find code 
+def move_arm():
+    if Pick_Fruit: True
+    arm_motor.spin(FORWARD)
