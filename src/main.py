@@ -79,7 +79,7 @@ hand_motor.spin(FORWARD)
 
 def move_arm():
     if Pick_Fruit: True
-    arm_motor.spin(FORWARD)
+    arm_motor.spin(FORWARD) #make sure
 
 
 
