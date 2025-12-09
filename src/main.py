@@ -43,15 +43,6 @@ eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_
 
 
 # Begin Code 
-# Define States
-
-IDLE: Nothing
-Searching_Fruit: Wall following + Looking for Fruit
-Approaching Fruit: Drive Towards Fruit
-Pick Fruit: Pick Fruit
-Searching_Basket: Wall following + Looking for Basket
-Deposit_Fruit: Release Fruit into Basket
-
 # Initialize State
 current_state = IDLE
 
@@ -202,5 +193,6 @@ while True:
 
  
     #Detect Fruit
+
 
 
