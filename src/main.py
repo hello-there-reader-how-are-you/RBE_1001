@@ -1,9 +1,16 @@
 #region VEXcode Generated Robot Configuration
 from vex import *
-import random 
 import math
+                  
+# ---------------------------------------------------------------------------- #
+#                                                                              #
+# 	Module:       main.py                                                      #
+# 	Author:                                                         #
+# 	Created:      12/8/2025, 11:06:34 AM                                       #
+# 	Description:  V5 project                                                   #
+#                                                                              #
+# ---------------------------------------------------------------------------- #
 
-# Brain should be defined by default
 brain=Brain()
 controller = Controller(PRIMARY)
 
@@ -27,40 +34,6 @@ eye__Purple = Colordesc(2, 153, 104, 159, 24, 0.68)
 eye__Orange = Colordesc(3, 244, 120, 91, 8, 0.14)
 eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_TAGS, AiVision.ALL_AIOBJS)
 
-# wait for rotation sensor to fully initialize
-wait(30, MSEC)
-
-# Make random actually random
-def initializeRandomSeed():
-    wait(100, MSEC)
-    seed_value = int(brain.battery.voltage(MV) + brain.battery.current(CurrentUnits.AMP) * 100 + brain.timer.system_high_res())
-    random.seed(seed_value)
-      
-# Set random seed 
-initializeRandomSeed()
-
-def play_vexcode_sound(sound_name):
-    # Helper to make playing sounds from the V5 in VEXcode easier and
-    # keeps the code cleaner by making it clear what is happening.
-    print("VEXPlaySound:" + sound_name)
-    wait(5, MSEC)
-
-# add a small delay to make sure we don't print in the middle of the REPL header
-wait(200, MSEC)
-# clear the console to make sure we don't have the REPL in the console
-print("\033[2J")
-
-                  
-# ---------------------------------------------------------------------------- #
-#                                                                              #
-# 	Module:       main.py                                                      #
-# 	Author:                                                         #
-# 	Created:      12/8/2025, 11:06:34 AM                                       #
-# 	Description:  V5 project                                                   #
-#                                                                              #
-# ---------------------------------------------------------------------------- #
-# Library imports
-from vex import *
 
 # Begin Code 
 # Define States
@@ -99,7 +72,6 @@ controller.buttonA.pressed(handleButton)
 missed_detections = 0
 
 def checkForLostObject():
-
     if (missed_detections > 20): return True 
     else : return False
 
