@@ -58,7 +58,6 @@ cameraInterval = 50 #MSEC?
 cameraTimer = Timer()
 missed_detections = 0
 
-
 def cameraTimerCallback():
     global current_state
     global missed_detections
@@ -83,26 +82,6 @@ def clamp(low, val, high):
 def scroll(theta):
     theta = ((theta-180)**2)**0.5 - 180
     return theta
-
-"""     
-def handleButton():
-    global current_state
-    if(current_state == IDLE):
-        print('IDLE -> SEARCHING')
-        current_state = SEARCHING
-        left_motor.spin(FORWARD, 20)
-        right_motor.spin(FORWARD, -20)
-
-        try:
-            cameraTimer.event(cameraTimerCallback, cameraInterval)
-        except NameError:
-            pass
-    else: 
-        print('Returning to IDLE')
-        current_state = IDLE
-        left_motor.stop()
-        right_motor.stop()
-"""
 
 
 def checkForLostObject():
@@ -137,11 +116,9 @@ def fruit_detect(fruit):
     else:
         fruit_name = "Unknown({fruit.id})"
 
-    
     print("Fruit detected at X:", cx, " Y:", cy, " Width:", fruit.width, " Height:", fruit.height)
     print("Fruit:", fruit_name)
     
-
     if(current_state == SEARCHING):
         print('SEARCHING -> APPROACHING')
         current_state = APPROACHING
@@ -153,7 +130,6 @@ def fruit_detect(fruit):
         k_x = 0.5
         turn_effort = k_x * error 
 
-        
         left_speed = 80 - turn_effort
         right_speed = 80 + turn_effort
 
@@ -162,7 +138,6 @@ def fruit_detect(fruit):
 
         missed_detections = 0
 
- 
         if abs(error) < 10 and fruit.height > 105:
             print('APPROACHING -> GRABBING')
             current_state = GRABBING
@@ -185,6 +160,7 @@ def Deposit_Fruit_In_Basket():
 
 #Idle:
 cameraTimer.event(cameraTimerCallback, cameraInterval)
+current_state = SEARCHING
 while True:
     if (checkForLostObject()):
         handleLostObject()
