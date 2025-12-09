@@ -16,6 +16,7 @@ DRIVE_SPEED = 80 #RPM
 DRIVE_MAX = 1.5*DRIVE_SPEED
 DRIVE_MIN = 0.5*DRIVE_SPEED
 Wall_PGain = 0.1*5
+Fruit_PGain = 1
 Arm_PGain = 1
 
 # Brain should be defined by default
@@ -30,10 +31,12 @@ hand_motor = Motor(Ports.PORT17, GearSetting.RATIO_18_1, False)
 arm_motor = Motor(Ports.PORT21, GearSetting.RATIO_18_1, False)
 
 
-Left_Sonar = Sonar(brain.three_wire_port.g)
+Left_Sonar = Sonar(brain.three_wire_port.c)
 Left_Sonar.distance(MM)
-Front_Sonar = Sonar(brain.three_wire_port.a)
+
+Front_Sonar = Sonar(brain.three_wire_port.g)
 Front_Sonar.distance(MM)
+
 
 X_RESOLUTION = 320
 Y_RESOLUTION = 240
@@ -45,6 +48,7 @@ eye__Orange = Colordesc(3, 244, 120, 91, 10, 0.2)
 eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_TAGS, AiVision.ALL_AIOBJS)
 
 wait(2, SECONDS)
+print("\033[2J")
 print("Start")
 
 def clamp(low, val, high):
@@ -57,7 +61,7 @@ def scroll(theta):
 def detect_fruits():
     all_fruits = [] #[AiVisionObject]
     all_fruits.extend(eye.take_snapshot(eye__Green))
-    all_fruits.extend(eye.take_snapshot(eye__Orange))
+    #all_fruits.extend(eye.take_snapshot(eye__Orange))
     all_fruits.extend(eye.take_snapshot(eye__Purple))
     if all_fruits:
         all_fruits.sort(key=lambda fruit: fruit.height) # Sorts fruit by hieght, analogus to distance
@@ -65,44 +69,43 @@ def detect_fruits():
 
 
 def Approach_Fruit():
+    target_x = (1/2) * X_RESOLUTION
+    target_y = (3/4) * Y_RESOLUTION
     while True:
         if (fruits := detect_fruits()):
             fruit = fruits[0]
             cx = fruit.centerX
             cy = fruit.centerY
-            height = fruit.height
+            print(cx,cy)
 
-            #Drive Towards Tree
-            K_speed = 0.4
-            target_x = (1/2) * X_Resolution
-            target_y = (3/4) * Y_Resolution
-            K_x = 0.5
-            error = cx - target_x
-            turn_effort = K_x * error
+            left_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED - Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
+            right_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED + Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
+            #print("height =" , fruit.height)
 
-            left_motor.spin(FORWARD, DRIVE_SPEED - turn_effort)
-            right_motor.spin(FORWARD, DRIVE_SPEED + turn_effort) 
+            arm_motor.spin(FORWARD, 0.05*(cy-target_y))
 
-            if height > 100: #This is a MAGIC NUMBER --- Will need to Be adjusted!!!
+            if fruit.height >= 100: #This is a MAGIC NUMBER --- Will need to Be adjusted!!!
                 left_motor.stop()
                 right_motor.stop()
                 brain.screen.print("READY TO PICK FRUIT")
                 Pick_Fruit()
 
 def Pick_Fruit():
+    target_y = (1/4) * Y_RESOLUTION
     while True:
         if (fruits := detect_fruits()):
             fruit = fruits[0]
-            cx = fruit.centerX
             cy = fruit.centerY
-
-
-
-
-        while hand_motor.torque() < 10:  
-            hand_motor.spin(FORWARD)
+            arm_motor.spin(FORWARD, 0.05*(cy-target_y))
+            if cy-target_y == 0:
+                arm_motor.stop()
+                while hand_motor.torque() < 2:  
+                    hand_motor.spin(FORWARD)
+                    Drive_To_Basket()
 
 def Drive_To_Basket():
+    while True:
+        exit()
     if failure:
         return
     Deposit_Fruit_In_Basket()
@@ -110,19 +113,17 @@ def Drive_To_Basket():
 def Deposit_Fruit_In_Basket():
     pass
 
-
 #Idle:
 while True:
-    """
     #Drive Fowards & Keep Dist. From wall
     daedalus_wall_dist = clamp(0, Left_Sonar.distance(MM), 300)
     #print(daedalus_wall_dist-TARGET_WALL_DISTANCE)
     if (daedalus_wall_dist > TARGET_WALL_DISTANCE):
-        #print("FAR")
+        print("FAR")
         left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
         right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
     else:
-        #print("CLOSE")
+        print("CLOSE")
         left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
         right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
 
@@ -130,7 +131,7 @@ while True:
     #Detect Wall: T turn left
     front_wall_distance = Front_Sonar.distance(MM)
     print(front_wall_distance)
-    if front_wall_distance <= 400: # MM to detect end of field
+    if front_wall_distance <= -10: # MM to detect end of field, Should Be 400
         print("TURNING")
         left_motor.stop()
         right_motor.stop()
@@ -143,8 +144,11 @@ while True:
         right_motor.spin_for(FORWARD, 180, DEGREES, DRIVE_SPEED)
         while -scroll(imu.heading()) <= 90: #90 Degree Turn
             right_motor.spin(FORWARD, DRIVE_MAX)
-    """
- 
+
+
     #Detect Fruit
     if (fruits := detect_fruits()):
+        print("DETECTED A FRUIT")
         Approach_Fruit()
+
+
