@@ -150,6 +150,10 @@ def Pick_Fruit():
         while hand_motor.torque() < 10:  
             hand_motor.spin(FORWARD)
 
+def move_arm():
+    if Pick_Fruit: True
+    arm_motor.spin(FORWARD)
+
 def Drive_To_Basket():
     if failure:
         return
