@@ -47,9 +47,28 @@ RELEASING = 5
 # Initialize State
 current_state = IDLE
 
-cameraInterval = 50
+cameraInterval = 50 #MSEC?
 cameraTimer = Timer()
-        
+
+def cameraTimerCallback():
+    global current_state
+    global missed_detections
+
+    all_fruits = []
+    all_fruits.extend(eye.take_snapshot(eye__Green))
+    all_fruits.extend(eye.take_snapshot(eye__Orange))
+    all_fruits.extend(eye.take_snapshot(eye__Purple))
+    
+    if all_fruits: 
+        fruit_detect(all_fruits[0])
+
+    else :
+        missed_detections = missed_detections + 1
+
+    if (current_state != IDLE):
+        cameraTimer.event(cameraTimerCallback, cameraInterval)
+
+"""     
 def handleButton():
     global current_state
     if(current_state == IDLE):
@@ -67,8 +86,8 @@ def handleButton():
         current_state = IDLE
         left_motor.stop()
         right_motor.stop()
+"""
 
-controller.buttonA.pressed(handleButton)
 missed_detections = 0
 
 def checkForLostObject():
@@ -82,27 +101,6 @@ def handleLostObject():
         current_state = SEARCHING
         left_motor.spin(FORWARD, 30)
         right_motor.spin(FORWARD, -30)
-
-
-def cameraTimerCallback():
-    global current_state
-    global missed_detections
-
-    all_fruits = []
-    all_fruits.extend(eye.take_snapshot(eye__Green))
-    all_fruits.extend(eye.take_snapshot(eye__Orange))
-    all_fruits.extend(eye.take_snapshot(eye__Purple))
-    
-    if all_fruits: 
-        fruit_detect(all_fruits[0])
-    
-    else :
-        missed_detections = missed_detections + 1
-
-   
-    if (current_state != IDLE):
-        cameraTimer.event(cameraTimerCallback, cameraInterval)
-
 
 def fruit_detect(fruit):
     global current_state
@@ -178,6 +176,7 @@ def Deposit_Fruit_In_Basket():
 
 
 #Idle:
+cameraTimer.event(cameraTimerCallback, cameraInterval)
 while True:
     if (checkForLostObject()):
         handleLostObject()
@@ -215,7 +214,4 @@ while True:
     """
  
     #Detect Fruit
-    if (fruits := detect_fruits()):
-
-        Approach_Fruit()
 
