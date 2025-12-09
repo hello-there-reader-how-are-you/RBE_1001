@@ -28,7 +28,7 @@ imu.calibrate()
 left_motor = Motor(Ports.PORT2, GearSetting.RATIO_18_1, True)
 right_motor = Motor(Ports.PORT9, GearSetting.RATIO_18_1, False)
 hand_motor = Motor(Ports.PORT17, GearSetting.RATIO_18_1, False)
-arm_motor = Motor(Ports.PORT21, GearSetting.RATIO_18_1, False)
+arm_motor = Motor(Ports.PORT11, GearSetting.RATIO_18_1, False)
 
 
 Left_Sonar = Sonar(brain.three_wire_port.g)
@@ -57,10 +57,15 @@ def detect_fruits():
         all_fruits.sort(key=lambda fruit: fruit.height) # Sorts fruit by hieght, analogus to distance
     return all_fruits
 
+target_y = (1/4) * Y_RESOLUTION
 while True:
-    try:
-        fruit = detect_fruits()[0]
-        print(fruit.height, "     ", fruit.id)
-    except:
-        print("None")
-    wait(0.1, SECONDS)
+    if (fruits := detect_fruits()):
+        fruit = fruits[0]
+        cx = fruit.centerX
+        cy = fruit.centerY
+        print(cx,cy)
+
+        #print("height =" , fruit.height)
+
+        arm_motor.spin(REVERSE, 0.5*(cy-target_y))
+

@@ -11,7 +11,7 @@
 from vex import *
 import math
 
-TARGET_WALL_DISTANCE = 150 #mm
+TARGET_WALL_DISTANCE = 250 #mm Should Be 150
 DRIVE_SPEED = 80 #RPM
 DRIVE_MAX = 1.5*DRIVE_SPEED
 DRIVE_MIN = 0.5*DRIVE_SPEED
@@ -28,7 +28,7 @@ imu.calibrate()
 left_motor = Motor(Ports.PORT2, GearSetting.RATIO_18_1, True)
 right_motor = Motor(Ports.PORT9, GearSetting.RATIO_18_1, False)
 hand_motor = Motor(Ports.PORT17, GearSetting.RATIO_18_1, False)
-arm_motor = Motor(Ports.PORT21, GearSetting.RATIO_18_1, False)
+arm_motor = Motor(Ports.PORT11, GearSetting.RATIO_18_1, False)
 
 
 Left_Sonar = Sonar(brain.three_wire_port.c)
@@ -69,7 +69,7 @@ def detect_fruits():
 
 
 def Approach_Fruit():
-    target_x = (1/2) * X_RESOLUTION
+    target_x = (1/3) * X_RESOLUTION
     target_y = (3/4) * Y_RESOLUTION
     while True:
         if (fruits := detect_fruits()):
@@ -84,19 +84,20 @@ def Approach_Fruit():
 
             arm_motor.spin(FORWARD, 0.05*(cy-target_y))
 
-            if fruit.height >= 100: #This is a MAGIC NUMBER --- Will need to Be adjusted!!!
+            if fruit.height >= 90: #This is a MAGIC NUMBER --- Will need to Be adjusted!!!
                 left_motor.stop()
                 right_motor.stop()
                 brain.screen.print("READY TO PICK FRUIT")
                 Pick_Fruit()
 
+
 def Pick_Fruit():
-    target_y = (1/4) * Y_RESOLUTION
+    target_y = (2/4) * Y_RESOLUTION
     while True:
         if (fruits := detect_fruits()):
             fruit = fruits[0]
             cy = fruit.centerY
-            arm_motor.spin(FORWARD, 0.05*(cy-target_y))
+            arm_motor.spin(REVERSE, 0.5*(cy-target_y))
             if cy-target_y == 0:
                 arm_motor.stop()
                 while hand_motor.torque() < 2:  
@@ -104,8 +105,12 @@ def Pick_Fruit():
                     Drive_To_Basket()
 
 def Drive_To_Basket():
+    left_motor.stop()
+    right_motor.stop()
+    arm_motor.stop()
+    hand_motor.stop()
     while True:
-        exit()
+        continue
     if failure:
         return
     Deposit_Fruit_In_Basket()
@@ -113,8 +118,16 @@ def Drive_To_Basket():
 def Deposit_Fruit_In_Basket():
     pass
 
+arm_motor.set_max_torque(50, PERCENT)
+arm_motor.spin_for(FORWARD, 1.2, TURNS, True)
 #Idle:
 while True:
+    #Detect Fruit
+    if (fruits := detect_fruits()):
+        print("DETECTED A FRUIT")
+        Approach_Fruit()
+
+
     #Drive Fowards & Keep Dist. From wall
     daedalus_wall_dist = clamp(0, Left_Sonar.distance(MM), 300)
     #print(daedalus_wall_dist-TARGET_WALL_DISTANCE)
@@ -145,10 +158,5 @@ while True:
         while -scroll(imu.heading()) <= 90: #90 Degree Turn
             right_motor.spin(FORWARD, DRIVE_MAX)
 
-
-    #Detect Fruit
-    if (fruits := detect_fruits()):
-        print("DETECTED A FRUIT")
-        Approach_Fruit()
 
 
