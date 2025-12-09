@@ -1,0 +1,7 @@
+IDLE: Nothing
+Searching_Fruit: Wall following + Looking for Fruit
+Approaching Fruit: Drive Towards Fruit
+Pick Fruit: Pick Fruit
+Searching_Basket: Wall following + Looking for Basket
+Deposit_Fruit: Release Fruit into Basket
+END.
