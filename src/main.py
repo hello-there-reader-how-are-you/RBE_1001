@@ -5,7 +5,7 @@ import math
 # ---------------------------------------------------------------------------- #
 #                                                                              #
 # 	Module:       main.py                                                      #
-# 	Author:                                                         #
+# 	Author:                                                                    #
 # 	Created:      12/8/2025, 11:06:34 AM                                       #
 # 	Description:  V5 project                                                   #
 #                                                                              #
