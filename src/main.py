@@ -87,7 +87,7 @@ def Approach_Fruit():
             left_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED - Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
             right_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED + Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
             #print("height =" , fruit.height)
-            arm_motor.spin(FORWARD, 0.5*(cy-target_y))
+            arm_motor.spin(REVERSE, 0.5*(cy-target_y))
             max_height = max(fruit.height, max_height)
 
         if max_height > 75 and ((fruits == []) or (fruits[0].height() < max_height - 10)):
