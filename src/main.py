@@ -1,18 +1,15 @@
-#region VEXcode Generated Robot Configuration
-from vex import *
-import math
-                  
 # ---------------------------------------------------------------------------- #
 #                                                                              #
 # 	Module:       main.py                                                      #
-# 	Author:                                                                    #
-# 	Created:      12/8/2025, 11:06:34 AM                                       #
+# 	Author:       alexandertheofilou                                           #
+# 	Created:      11/23/2025, 11:09:04 AM                                      #
 # 	Description:  V5 project                                                   #
 #                                                                              #
 # ---------------------------------------------------------------------------- #
 
-brain=Brain()
-controller = Controller(PRIMARY)
+# Library imports
+from vex import *
+import math
 
 TARGET_WALL_DISTANCE = 150 #mm Should Be 150
 DRIVE_SPEED = 80 #RPM
@@ -22,11 +19,9 @@ Wall_PGain = 0.1*5
 Fruit_PGain = 1
 Arm_PGain = 1
 
-# Motor and Sensor Definitions
-left_motor = Motor(Ports.PORT2, GearSetting.RATIO_18_1, False)
-right_motor = Motor(Ports.PORT9, GearSetting.RATIO_18_1, True)
-hand_motor = Motor(Ports.PORT17, GearSetting.RATIO_36_1, False)
-arm_motor = Motor(Ports.PORT11, GearSetting.RATIO_36_1, False)
+# Brain should be defined by default
+brain=Brain()
+
 imu = Inertial(Ports.PORT13)
 imu.calibrate()
 
@@ -66,40 +61,41 @@ def scroll(theta):
 
 def detect_fruits():
     all_fruits = [] #[AiVisionObject]
-    #all_fruits.extend(eye.take_snapshot(eye__Green))
+    all_fruits.extend(eye.take_snapshot(eye__Green))
     all_fruits.extend(eye.take_snapshot(eye__Orange))
-    #all_fruits.extend(eye.take_snapshot(eye__Purple))
+    all_fruits.extend(eye.take_snapshot(eye__Purple))
     if all_fruits:
         all_fruits.sort(key=lambda fruit: fruit.height) # Sorts fruit by hieght, analogus to distance
     return all_fruits
 
 approach_dt = 100 #MSEC
 def Approach_Fruit():
+    arm_motor.set_max_torque(100, PERCENT)
     imu.set_heading(0)
     target_x = (1/3) * X_RESOLUTION
     target_y = (0.1) * Y_RESOLUTION
-    flag = False
+    max_height = 0
     while True:
-        if (fruits := detect_fruits()):
+        print(max_height)
+        fruits = detect_fruits()
+        if (fruits):
             fruit = fruits[0]
             cx = fruit.centerX
             cy = fruit.centerY
-            print(cx,cy)
+            #print(cx,cy)
 
             left_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED - Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
             right_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED + Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
             #print("height =" , fruit.height)
-            arm_motor.spin(REVERSE, 0.5*(cy-target_y))
+            arm_motor.spin(FORWARD, 0.5*(cy-target_y))
+            max_height = max(fruit.height, max_height)
 
-            if fruit.height >= 70:
-                flag = True
-
-        else:
-            if flag:
-                left_motor.stop()
-                right_motor.stop()
-                print("READY TO PICK FRUIT")
-                Pick_Fruit()
+        if max_height > 75 and ((fruits == []) or (fruits[0].height() < max_height - 10)):
+            arm_motor.stop()
+            left_motor.stop()
+            right_motor.stop()
+            print("READY TO PICK FRUIT")
+            Pick_Fruit()
 
 
 def Pick_Fruit():
@@ -119,17 +115,16 @@ def Pick_Fruit():
     hand_motor.set_max_torque(100, PERCENT)
     while hand_motor.torque() < 0.7:  
         hand_motor.spin(FORWARD)
-        print("GRASPED")
+        print("GRASPING")
     hand_motor.set_max_torque(0.2, TorqueUnits.NM)
     HAVE_FRUIT = True
     print(Front_Sonar.distance(MM)) # DO NOT REMOVE
-    
-    dist = ((Front_Sonar.distance(MM)/10) * math.sin((math.pi / 180) * (imu.heading()-180))) #CM
-    dist = Front_Sonar.distance(MM) / 10 #CM
-    dist = dist - 20
-    dist = (5.5 * dist) / 11*math.pi
-    left_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, False)
-    right_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, True)
+    print(imu.heading())
+
+    while dist := Front_Sonar.distance(MM) * math.sin((math.pi / 180) * (imu.heading()-180)) > daedalus_wall_dist:
+        print(dist)
+        left_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, False)
+        right_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, False)
     return
 
 
@@ -141,13 +136,13 @@ def Drive_To_Basket():
 
 def Deposit_Fruit_In_Basket():
     arm_motor.spin_for(REVERSE, 3, TURNS, 20, RPM, True)
+    while True:
+        wait(1, SECONDS)
 
 arm_motor.set_max_torque(100, PERCENT)
 arm_motor.spin_for(FORWARD, 1.2, TURNS, True)
 HAVE_FRUIT = False
 #Idle:
-cameraTimer.event(cameraTimerCallback, cameraInterval)
-current_state = SEARCHING_FRUIT
 while True:
     #Detect Fruit
     if not HAVE_FRUIT:
@@ -186,6 +181,5 @@ while True:
         right_motor.spin_for(FORWARD, 180, DEGREES, DRIVE_SPEED)
         while -scroll(imu.heading()) <= 90: #90 Degree Turn
             right_motor.spin(FORWARD, DRIVE_MAX)
-
 
 
