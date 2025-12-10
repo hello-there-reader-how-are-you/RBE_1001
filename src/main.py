@@ -28,7 +28,7 @@ imu.calibrate()
 left_motor = Motor(Ports.PORT2, GearSetting.RATIO_18_1, True)
 right_motor = Motor(Ports.PORT9, GearSetting.RATIO_18_1, False)
 hand_motor = Motor(Ports.PORT17, GearSetting.RATIO_18_1, False)
-arm_motor = Motor(Ports.PORT11, GearSetting.RATIO_18_1, False)
+arm_motor = Motor(Ports.PORT11, GearSetting.RATIO_36_1, False)
 arm_motor.set_stopping(HOLD)
 
 Left_Sonar = Sonar(brain.three_wire_port.c)
