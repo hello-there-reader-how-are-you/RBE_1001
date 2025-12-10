@@ -31,13 +31,13 @@ hand_motor = Motor(Ports.PORT17, GearSetting.RATIO_18_1, False)
 arm_motor = Motor(Ports.PORT11, GearSetting.RATIO_18_1, False)
 arm_motor.set_stopping(HOLD)
 
-
 Left_Sonar = Sonar(brain.three_wire_port.c)
 Left_Sonar.distance(MM)
 
 Front_Sonar = Sonar(brain.three_wire_port.g)
 Front_Sonar.distance(MM)
 
+bright = Line(brain.three_wire_port.a)
 
 X_RESOLUTION = 320
 Y_RESOLUTION = 240
@@ -70,11 +70,9 @@ def detect_fruits():
 
 approach_dt = 100 #MSEC
 def Approach_Fruit():
-    relative_epoch = brain.timer
-    back_up_frames = []
+    imu.set_heading(0)
     target_x = (1/3) * X_RESOLUTION
     target_y = (0.1) * Y_RESOLUTION
-    i = 1
     flag = False
     while True:
         if (fruits := detect_fruits()):
@@ -91,63 +89,66 @@ def Approach_Fruit():
             if fruit.height >= 70:
                 flag = True
 
-            if relative_epoch.time() > approach_dt*i:
-                i+=1
-                back_up_frames.append([clamp(DRIVE_MIN, DRIVE_SPEED - Fruit_PGain*(cx - target_x), DRIVE_MAX), REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED + Fruit_PGain*(cx - target_x), DRIVE_MAX)])
-
         else:
             if flag:
                 left_motor.stop()
                 right_motor.stop()
                 print("READY TO PICK FRUIT")
-                Pick_Fruit(back_up_frames)
+                Pick_Fruit()
 
 
-def Pick_Fruit(back_up_frames):
+def Pick_Fruit():
+    global HAVE_FRUIT
     left_motor.stop()
     right_motor.stop()
-    left_motor.spin_for(FORWARD, 2.5, TURNS, DRIVE_SPEED, RPM, False)
+    left_motor.spin_for(FORWARD, 2, TURNS, DRIVE_SPEED, RPM, False)
     right_motor.spin_for(FORWARD, 1, TURNS, DRIVE_SPEED, RPM, True)
     wait(3, SECONDS)
-    arm_motor.spin_for(FORWARD, 0.2, TURNS, True)
-    left_motor.spin_for(REVERSE, 1.5, TURNS, DRIVE_SPEED, RPM, False)
-    right_motor.spin_for(REVERSE, 1.5, TURNS, DRIVE_SPEED, RPM, False)
-    while hand_motor.torque() < 0.7:  
-        hand_motor.spin(FORWARD)
-    hand_motor.set_max_torque(0.2, TorqueUnits.NM)
-
-    Drive_To_Basket(back_up_frames)
-
-def Drive_To_Basket(back_up_frames):
-    while True:
-        wait(1)
-    for frame in reversed(back_up_frames):
-        left_motor.spin(REVERSE, frame[0])
-        right_motor.spin(REVERSE, frame[1])
-        wait(approach_dt)
-
+    arm_motor.spin_for(FORWARD, 0.3, TURNS, True)
+    while bright.reflectivity() < 85:
+        left_motor.spin(REVERSE, DRIVE_SPEED, RPM)
+        right_motor.spin(REVERSE, DRIVE_SPEED, RPM)
     left_motor.stop()
     right_motor.stop()
-    arm_motor.stop()
-    hand_motor.stop()
-    while True:
-        continue
-    if failure:
-        return
+
+    hand_motor.set_max_torque(100, PERCENT)
+    while hand_motor.torque() < 0.7:  
+        hand_motor.spin(FORWARD)
+        print("GRASPED")
+    hand_motor.set_max_torque(0.2, TorqueUnits.NM)
+    HAVE_FRUIT = True
+    print(Front_Sonar.distance(MM)) # DO NOT REMOVE
+    
+    #dist = ((Front_Sonar.distance(MM)/10) * math.sin((math.pi / 180) * (imu.heading()-180))) #CM
+    dist = Front_Sonar.distance(MM) / 10 #CM
+    dist = dist - 20
+    dist = (5.5 * dist) / 11*math.pi
+    left_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, False)
+    right_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, True)
+    return
+
+
+
+def Drive_To_Basket():
+    #CODE NEEDED!!!!!!!!!!!
+    pass
     Deposit_Fruit_In_Basket()
 
 def Deposit_Fruit_In_Basket():
-    pass
+    arm_motor.spin_for(REVERSE, 3, TURNS, 20, RPM, True)
 
 arm_motor.set_max_torque(100, PERCENT)
 arm_motor.spin_for(FORWARD, 1.2, TURNS, True)
-
+HAVE_FRUIT = False
 #Idle:
 while True:
     #Detect Fruit
-    if (fruits := detect_fruits()):
-        print("DETECTED A FRUIT")
-        Approach_Fruit()
+    if not HAVE_FRUIT:
+        if (fruits := detect_fruits()):
+            print("DETECTED A FRUIT")
+            Approach_Fruit()
+    if HAVE_FRUIT:
+        Drive_To_Basket()
         
     #Drive Fowards & Keep Dist. From wall
     daedalus_wall_dist = clamp(0, Left_Sonar.distance(MM), 300)

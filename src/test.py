@@ -58,7 +58,7 @@ def detect_fruits():
     return all_fruits
 
 
-left_motor.spin_for(FORWARD, 3, TURNS, DRIVE_SPEED, RPM, False)
-right_motor.spin_for(FORWARD, 1, TURNS, DRIVE_SPEED, RPM, True)
-wait(2, SECONDS)
-arm_motor.spin_for(FORWARD, 0.35, TURNS, True)
+bright = Line(brain.three_wire_port.a)
+
+while True:
+    print(bright.reflectivity())
