@@ -73,7 +73,7 @@ def Approach_Fruit():
     arm_motor.set_max_torque(100, PERCENT)
     imu.set_heading(0)
     target_x = (1/3) * X_RESOLUTION
-    target_y = (0.1) * Y_RESOLUTION
+    target_y = (0.25) * Y_RESOLUTION
     max_height = 0
     while True:
         print(max_height)
@@ -90,7 +90,7 @@ def Approach_Fruit():
             arm_motor.spin(REVERSE, 0.5*(cy-target_y))
             max_height = max(fruit.height, max_height)
 
-        if max_height > 75 and ((fruits == []) or (fruits[0].height() < max_height - 10)):
+        if max_height >= 50:
             arm_motor.stop()
             left_motor.stop()
             right_motor.stop()
@@ -105,7 +105,7 @@ def Pick_Fruit():
     left_motor.spin_for(FORWARD, 2, TURNS, DRIVE_SPEED, RPM, False)
     right_motor.spin_for(FORWARD, 1, TURNS, DRIVE_SPEED, RPM, True)
     wait(3, SECONDS)
-    arm_motor.spin_for(FORWARD, 0.3, TURNS, True)
+    arm_motor.spin_for(FORWARD, 0.15, TURNS, True)
     while bright.reflectivity() < 85:
         left_motor.spin(REVERSE, DRIVE_SPEED, RPM)
         right_motor.spin(REVERSE, DRIVE_SPEED, RPM)
