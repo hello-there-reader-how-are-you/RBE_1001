@@ -121,7 +121,7 @@ def Pick_Fruit():
     print(Front_Sonar.distance(MM)) # DO NOT REMOVE
     print(imu.heading())
 
-    while (dist := Front_Sonar.distance(MM) * math.sin((math.pi / 180) * (imu.heading()-180))) > daedalus_wall_dist:
+    while (dist := Front_Sonar.distance(MM) * math.sin(math.radians(imu.heading()-180))) > daedalus_wall_dist:
         print(dist)
         left_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, False)
         right_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, False)
