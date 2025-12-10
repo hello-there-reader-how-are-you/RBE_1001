@@ -119,7 +119,7 @@ def Pick_Fruit():
     HAVE_FRUIT = True
     print(Front_Sonar.distance(MM)) # DO NOT REMOVE
     
-    #dist = ((Front_Sonar.distance(MM)/10) * math.sin((math.pi / 180) * (imu.heading()-180))) #CM
+    dist = ((Front_Sonar.distance(MM)/10) * math.sin((math.pi / 180) * (imu.heading()-180))) #CM
     dist = Front_Sonar.distance(MM) / 10 #CM
     dist = dist - 20
     dist = (5.5 * dist) / 11*math.pi
