@@ -14,11 +14,12 @@ import math
 brain=Brain()
 controller = Controller(PRIMARY)
 
-TARGET_WALL_DISTANCE = 150 #mm
+TARGET_WALL_DISTANCE = 150 #mm Should Be 150
 DRIVE_SPEED = 80 #RPM
 DRIVE_MAX = 1.5*DRIVE_SPEED
 DRIVE_MIN = 0.5*DRIVE_SPEED
 Wall_PGain = 0.1*5
+Fruit_PGain = 1
 Arm_PGain = 1
 
 # Motor and Sensor Definitions
@@ -29,52 +30,32 @@ arm_motor = Motor(Ports.PORT11, GearSetting.RATIO_36_1, False)
 imu = Inertial(Ports.PORT13)
 imu.calibrate()
 
+left_motor = Motor(Ports.PORT2, GearSetting.RATIO_18_1, True)
+right_motor = Motor(Ports.PORT9, GearSetting.RATIO_18_1, False)
+hand_motor = Motor(Ports.PORT17, GearSetting.RATIO_18_1, False)
+arm_motor = Motor(Ports.PORT11, GearSetting.RATIO_18_1, False)
+arm_motor.set_stopping(HOLD)
 
-Left_Sonar = Sonar(brain.three_wire_port.g)
+Left_Sonar = Sonar(brain.three_wire_port.c)
 Left_Sonar.distance(MM)
-Front_Sonar = Sonar(brain.three_wire_port.a)
+
+Front_Sonar = Sonar(brain.three_wire_port.g)
 Front_Sonar.distance(MM)
 
-# AI Vision Color Descriptions
+bright = Line(brain.three_wire_port.a)
+
+X_RESOLUTION = 320
+Y_RESOLUTION = 240
+
 eye__Green = Colordesc(1, 64, 227, 108, 12, 0.91)
 eye__Purple = Colordesc(2, 153, 104, 159, 24, 0.68)
 eye__Orange = Colordesc(3, 244, 120, 91, 8, 0.14)
+# AI Vision Code Descriptions
 eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_TAGS, AiVision.ALL_AIOBJS)
 
-
-# Begin Code 
-# Define States
-IDLE = 0 
-SEARCHING = 1
-APPROACHING = 2
-GRABBING = 3
-DELLIVERING = 4
-RELEASING = 5
-
-# Initialize State
-current_state = IDLE
-
-cameraInterval = 50 #MSEC?
-cameraTimer = Timer()
-missed_detections = 0
-
-def cameraTimerCallback():
-    global current_state
-    global missed_detections
-
-    all_fruits = []
-    all_fruits.extend(eye.take_snapshot(eye__Green))
-    all_fruits.extend(eye.take_snapshot(eye__Orange))
-    all_fruits.extend(eye.take_snapshot(eye__Purple))
-    
-    if all_fruits: 
-        fruit_detect(all_fruits[0])
-
-    else :
-        missed_detections = missed_detections + 1
-
-    if (current_state != IDLE):
-        cameraTimer.event(cameraTimerCallback, cameraInterval)
+wait(2, SECONDS)
+print("\033[2J")
+print("Start")
 
 def clamp(low, val, high):
     return max(min(val, high), low)
@@ -83,97 +64,108 @@ def scroll(theta):
     theta = ((theta-180)**2)**0.5 - 180
     return theta
 
+def detect_fruits():
+    all_fruits = [] #[AiVisionObject]
+    #all_fruits.extend(eye.take_snapshot(eye__Green))
+    all_fruits.extend(eye.take_snapshot(eye__Orange))
+    #all_fruits.extend(eye.take_snapshot(eye__Purple))
+    if all_fruits:
+        all_fruits.sort(key=lambda fruit: fruit.height) # Sorts fruit by hieght, analogus to distance
+    return all_fruits
 
-def checkForLostObject():
-    global missed_detections
-    if (missed_detections > 20):
-        missed_detections = 0
-        return True 
-    else : return False
+approach_dt = 100 #MSEC
+def Approach_Fruit():
+    imu.set_heading(0)
+    target_x = (1/3) * X_RESOLUTION
+    target_y = (0.1) * Y_RESOLUTION
+    flag = False
+    while True:
+        if (fruits := detect_fruits()):
+            fruit = fruits[0]
+            cx = fruit.centerX
+            cy = fruit.centerY
+            print(cx,cy)
 
-def handleLostObject():
-    global current_state
-    if current_state == APPROACHING:
-        print('APPROACHING -> SEARCHING')
-        current_state = SEARCHING
-        left_motor.spin(FORWARD, 30)
-        right_motor.spin(FORWARD, -30)
+            left_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED - Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
+            right_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED + Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
+            #print("height =" , fruit.height)
+            arm_motor.spin(REVERSE, 0.5*(cy-target_y))
 
-def fruit_detect(fruit):
-    global current_state
-    global object_timer
-    global missed_detections
+            if fruit.height >= 70:
+                flag = True
 
-    cx = fruit.centerX
-    cy = fruit.centerY
+        else:
+            if flag:
+                left_motor.stop()
+                right_motor.stop()
+                print("READY TO PICK FRUIT")
+                Pick_Fruit()
 
-    if fruit.id == 1:
-        fruit_name = "Green"
-    elif fruit.id == 2:
-        fruit_name = "Purple"
-    elif fruit.id == 3:
-        fruit_name = "Orange"
-    else:
-        fruit_name = "Unknown({fruit.id})"
-
-    print("Fruit detected at X:", cx, " Y:", cy, " Width:", fruit.width, " Height:", fruit.height)
-    print("Fruit:", fruit_name)
-    
-    if(current_state == SEARCHING):
-        print('SEARCHING -> APPROACHING')
-        current_state = APPROACHING
-    
-    if current_state == APPROACHING:
-       
-        target_x = 160  
-        error = cx - target_x  
-        k_x = 0.5
-        turn_effort = k_x * error 
-
-        left_speed = 80 - turn_effort
-        right_speed = 80 + turn_effort
-
-        left_motor.spin(FORWARD, left_speed)
-        right_motor.spin(FORWARD, right_speed)
-
-        missed_detections = 0
-
-        if abs(error) < 10 and fruit.height > 105:
-            print('APPROACHING -> GRABBING')
-            current_state = GRABBING
-            left_motor.stop()
-            right_motor.stop()
-            Pick_Fruit()
 
 def Pick_Fruit():
-        while hand_motor.torque() < 10:  
-            hand_motor.spin(FORWARD)
+    global HAVE_FRUIT
+    left_motor.stop()
+    right_motor.stop()
+    left_motor.spin_for(FORWARD, 2, TURNS, DRIVE_SPEED, RPM, False)
+    right_motor.spin_for(FORWARD, 1, TURNS, DRIVE_SPEED, RPM, True)
+    wait(3, SECONDS)
+    arm_motor.spin_for(FORWARD, 0.3, TURNS, True)
+    while bright.reflectivity() < 85:
+        left_motor.spin(REVERSE, DRIVE_SPEED, RPM)
+        right_motor.spin(REVERSE, DRIVE_SPEED, RPM)
+    left_motor.stop()
+    right_motor.stop()
+
+    hand_motor.set_max_torque(100, PERCENT)
+    while hand_motor.torque() < 0.7:  
+        hand_motor.spin(FORWARD)
+        print("GRASPED")
+    hand_motor.set_max_torque(0.2, TorqueUnits.NM)
+    HAVE_FRUIT = True
+    print(Front_Sonar.distance(MM)) # DO NOT REMOVE
+    
+    dist = ((Front_Sonar.distance(MM)/10) * math.sin((math.pi / 180) * (imu.heading()-180))) #CM
+    dist = Front_Sonar.distance(MM) / 10 #CM
+    dist = dist - 20
+    dist = (5.5 * dist) / 11*math.pi
+    left_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, False)
+    right_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, True)
+    return
+
+
 
 def Drive_To_Basket():
-    if failure:
-        return
+    #CODE NEEDED!!!!!!!!!!!
+    pass
     Deposit_Fruit_In_Basket()
 
 def Deposit_Fruit_In_Basket():
-    pass
+    arm_motor.spin_for(REVERSE, 3, TURNS, 20, RPM, True)
 
-
+arm_motor.set_max_torque(100, PERCENT)
+arm_motor.spin_for(FORWARD, 1.2, TURNS, True)
+HAVE_FRUIT = False
 #Idle:
 cameraTimer.event(cameraTimerCallback, cameraInterval)
 current_state = SEARCHING
 while True:
-    if (checkForLostObject()):
-        handleLostObject()
-
+    #Detect Fruit
+    if not HAVE_FRUIT:
+        if (fruits := detect_fruits()):
+            print("DETECTED A FRUIT")
+            Approach_Fruit()
+    if HAVE_FRUIT:
+        Drive_To_Basket()
+        
     #Drive Fowards & Keep Dist. From wall
     daedalus_wall_dist = clamp(0, Left_Sonar.distance(MM), 300)
     #print(daedalus_wall_dist-TARGET_WALL_DISTANCE)
     if (daedalus_wall_dist > TARGET_WALL_DISTANCE):
-        #print("FAR")
+        print("FAR")
         left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
         right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
     else:
-        #print("CLOSE")
+        print("CLOSE")
         left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
         right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
 
@@ -181,7 +173,7 @@ while True:
     #Detect Wall: T turn left
     front_wall_distance = Front_Sonar.distance(MM)
     print(front_wall_distance)
-    if front_wall_distance <= 400: # MM to detect end of field
+    if front_wall_distance <= -10: # MM to detect end of field, Should Be 400
         print("TURNING")
         left_motor.stop()
         right_motor.stop()
@@ -195,6 +187,5 @@ while True:
         while -scroll(imu.heading()) <= 90: #90 Degree Turn
             right_motor.spin(FORWARD, DRIVE_MAX)
 
- 
-    #Detect Fruit
+
 
