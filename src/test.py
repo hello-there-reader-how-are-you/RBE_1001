@@ -39,9 +39,9 @@ Front_Sonar.distance(MM)
 X_RESOLUTION = 320
 Y_RESOLUTION = 240
 
-eye__Green = Colordesc(1, 64, 227, 108, 10, 0.2)
-eye__Purple = Colordesc(2, 153, 104, 159, 10, 0.2)
-eye__Orange = Colordesc(3, 244, 120, 91, 10, 0.2)
+eye__Green = Colordesc(1, 64, 227, 108, 12, 0.91)
+eye__Purple = Colordesc(2, 153, 104, 159, 24, 0.68)
+eye__Orange = Colordesc(3, 244, 120, 91, 8, 0.14)
 # AI Vision Code Descriptions
 eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_TAGS, AiVision.ALL_AIOBJS)
 
@@ -57,15 +57,8 @@ def detect_fruits():
         all_fruits.sort(key=lambda fruit: fruit.height) # Sorts fruit by hieght, analogus to distance
     return all_fruits
 
-target_y = (1/4) * Y_RESOLUTION
-while True:
-    if (fruits := detect_fruits()):
-        fruit = fruits[0]
-        cx = fruit.centerX
-        cy = fruit.centerY
-        print(cx,cy)
 
-        #print("height =" , fruit.height)
-
-        arm_motor.spin(REVERSE, 0.5*(cy-target_y))
-
+left_motor.spin_for(FORWARD, 3, TURNS, DRIVE_SPEED, RPM, False)
+right_motor.spin_for(FORWARD, 1, TURNS, DRIVE_SPEED, RPM, True)
+wait(2, SECONDS)
+arm_motor.spin_for(FORWARD, 0.35, TURNS, True)

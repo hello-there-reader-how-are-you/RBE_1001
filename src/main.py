@@ -11,7 +11,7 @@
 from vex import *
 import math
 
-TARGET_WALL_DISTANCE = 250 #mm Should Be 150
+TARGET_WALL_DISTANCE = 150 #mm Should Be 150
 DRIVE_SPEED = 80 #RPM
 DRIVE_MAX = 1.5*DRIVE_SPEED
 DRIVE_MIN = 0.5*DRIVE_SPEED
@@ -29,6 +29,7 @@ left_motor = Motor(Ports.PORT2, GearSetting.RATIO_18_1, True)
 right_motor = Motor(Ports.PORT9, GearSetting.RATIO_18_1, False)
 hand_motor = Motor(Ports.PORT17, GearSetting.RATIO_18_1, False)
 arm_motor = Motor(Ports.PORT11, GearSetting.RATIO_18_1, False)
+arm_motor.set_stopping(HOLD)
 
 
 Left_Sonar = Sonar(brain.three_wire_port.c)
@@ -41,9 +42,9 @@ Front_Sonar.distance(MM)
 X_RESOLUTION = 320
 Y_RESOLUTION = 240
 
-eye__Green = Colordesc(1, 64, 227, 108, 10, 0.2)
-eye__Purple = Colordesc(2, 153, 104, 159, 10, 0.2)
-eye__Orange = Colordesc(3, 244, 120, 91, 10, 0.2)
+eye__Green = Colordesc(1, 64, 227, 108, 12, 0.91)
+eye__Purple = Colordesc(2, 153, 104, 159, 24, 0.68)
+eye__Orange = Colordesc(3, 244, 120, 91, 8, 0.14)
 # AI Vision Code Descriptions
 eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_TAGS, AiVision.ALL_AIOBJS)
 
@@ -60,17 +61,21 @@ def scroll(theta):
 
 def detect_fruits():
     all_fruits = [] #[AiVisionObject]
-    all_fruits.extend(eye.take_snapshot(eye__Green))
-    #all_fruits.extend(eye.take_snapshot(eye__Orange))
-    all_fruits.extend(eye.take_snapshot(eye__Purple))
+    #all_fruits.extend(eye.take_snapshot(eye__Green))
+    all_fruits.extend(eye.take_snapshot(eye__Orange))
+    #all_fruits.extend(eye.take_snapshot(eye__Purple))
     if all_fruits:
         all_fruits.sort(key=lambda fruit: fruit.height) # Sorts fruit by hieght, analogus to distance
     return all_fruits
 
-
+approach_dt = 100 #MSEC
 def Approach_Fruit():
+    relative_epoch = brain.timer
+    back_up_frames = []
     target_x = (1/3) * X_RESOLUTION
-    target_y = (3/4) * Y_RESOLUTION
+    target_y = (0.1) * Y_RESOLUTION
+    i = 1
+    flag = False
     while True:
         if (fruits := detect_fruits()):
             fruit = fruits[0]
@@ -81,30 +86,46 @@ def Approach_Fruit():
             left_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED - Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
             right_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED + Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
             #print("height =" , fruit.height)
+            arm_motor.spin(REVERSE, 0.5*(cy-target_y))
 
-            arm_motor.spin(FORWARD, 0.05*(cy-target_y))
+            if fruit.height >= 70:
+                flag = True
 
-            if fruit.height >= 90: #This is a MAGIC NUMBER --- Will need to Be adjusted!!!
+            if relative_epoch.time() > approach_dt*i:
+                i+=1
+                back_up_frames.append([clamp(DRIVE_MIN, DRIVE_SPEED - Fruit_PGain*(cx - target_x), DRIVE_MAX), REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED + Fruit_PGain*(cx - target_x), DRIVE_MAX)])
+
+        else:
+            if flag:
                 left_motor.stop()
                 right_motor.stop()
-                brain.screen.print("READY TO PICK FRUIT")
-                Pick_Fruit()
+                print("READY TO PICK FRUIT")
+                Pick_Fruit(back_up_frames)
 
 
-def Pick_Fruit():
-    target_y = (2/4) * Y_RESOLUTION
+def Pick_Fruit(back_up_frames):
+    left_motor.stop()
+    right_motor.stop()
+    left_motor.spin_for(FORWARD, 2.5, TURNS, DRIVE_SPEED, RPM, False)
+    right_motor.spin_for(FORWARD, 1, TURNS, DRIVE_SPEED, RPM, True)
+    wait(3, SECONDS)
+    arm_motor.spin_for(FORWARD, 0.2, TURNS, True)
+    left_motor.spin_for(REVERSE, 1.5, TURNS, DRIVE_SPEED, RPM, False)
+    right_motor.spin_for(REVERSE, 1.5, TURNS, DRIVE_SPEED, RPM, False)
+    while hand_motor.torque() < 0.7:  
+        hand_motor.spin(FORWARD)
+    hand_motor.set_max_torque(0.2, TorqueUnits.NM)
+
+    Drive_To_Basket(back_up_frames)
+
+def Drive_To_Basket(back_up_frames):
     while True:
-        if (fruits := detect_fruits()):
-            fruit = fruits[0]
-            cy = fruit.centerY
-            arm_motor.spin(REVERSE, 0.5*(cy-target_y))
-            if cy-target_y == 0:
-                arm_motor.stop()
-                while hand_motor.torque() < 2:  
-                    hand_motor.spin(FORWARD)
-                    Drive_To_Basket()
+        wait(1)
+    for frame in reversed(back_up_frames):
+        left_motor.spin(REVERSE, frame[0])
+        right_motor.spin(REVERSE, frame[1])
+        wait(approach_dt)
 
-def Drive_To_Basket():
     left_motor.stop()
     right_motor.stop()
     arm_motor.stop()
@@ -118,16 +139,16 @@ def Drive_To_Basket():
 def Deposit_Fruit_In_Basket():
     pass
 
-arm_motor.set_max_torque(50, PERCENT)
+arm_motor.set_max_torque(100, PERCENT)
 arm_motor.spin_for(FORWARD, 1.2, TURNS, True)
+
 #Idle:
 while True:
     #Detect Fruit
     if (fruits := detect_fruits()):
         print("DETECTED A FRUIT")
         Approach_Fruit()
-
-
+        
     #Drive Fowards & Keep Dist. From wall
     daedalus_wall_dist = clamp(0, Left_Sonar.distance(MM), 300)
     #print(daedalus_wall_dist-TARGET_WALL_DISTANCE)
