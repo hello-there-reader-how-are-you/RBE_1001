@@ -1,4 +1,5 @@
 from vex import *
+from main import Pick_Fruit
 
 brain=Brain()
 

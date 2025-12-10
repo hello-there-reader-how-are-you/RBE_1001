@@ -147,7 +147,7 @@ arm_motor.spin_for(FORWARD, 1.2, TURNS, True)
 HAVE_FRUIT = False
 #Idle:
 cameraTimer.event(cameraTimerCallback, cameraInterval)
-current_state = SEARCHING
+current_state = SEARCHING_FRUIT
 while True:
     #Detect Fruit
     if not HAVE_FRUIT:
