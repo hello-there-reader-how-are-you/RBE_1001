@@ -45,8 +45,20 @@ Y_RESOLUTION = 240
 eye__Green = Colordesc(1, 64, 227, 108, 12, 0.91)
 eye__Purple = Colordesc(2, 153, 104, 159, 24, 0.68)
 eye__Orange = Colordesc(3, 244, 120, 91, 8, 0.14)
-# AI Vision Code Descriptions
-eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_TAGS, AiVision.ALL_AIOBJS)
+
+# Basket Color Detection
+eye__COLOR5 = Colordesc(5, 245, 119, 195, 16, 0.47)
+eye__Green_B = Codedesc(1, eye__COLOR5, eye__Green)
+eye__Orange_B = Codedesc(2, eye__COLOR5, eye__Orange)
+eye__Purple_B = Codedesc(3, eye__COLOR5, eye__Purple)
+
+# AI Vision sensor
+eye = AiVision(
+    Ports.PORT19, 
+    eye__Green, eye__Purple, eye__Orange, 
+    eye__COLOR5, eye__Green_B, eye__Orange_B, eye__Purple_B, 
+    AiVision.ALL_TAGS
+)
 
 wait(2, SECONDS)
 print("\033[2J")
@@ -139,10 +151,23 @@ def Pick_Fruit():
 
 
 def Drive_To_Basket():
-    #CODE NEEDED!!!!!!!!!!!
-    pass
-    Deposit_Fruit_In_Basket()
-
+    global CURRENT_FRUIT
+    basket = detect_basket(CURRENT_FRUIT)
+    if basket:
+        basket_cx = basket.centerX
+        target_cx = X_RESOLUTION/2
+        while abs(basket_cx - target_cx) > 10:
+            basket = detect_basket(CURRENT_FRUIT)
+            if basket:
+                basket_cx = basket.centerX
+                error = basket_cx - target_cx
+                left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Fruit_PGain*error, DRIVE_MAX))
+                right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Fruit_PGain*error, DRIVE_MAX))
+        left_motor.stop()
+        right_motor.stop()
+        print("Arrived in front of {CURRENT_FRUIT} basket")
+        Deposit_Fruit_In_Basket()
+        
 def Deposit_Fruit_In_Basket():
     arm_motor.spin_for(REVERSE, 3, TURNS, 20, RPM, True)
     while True:
@@ -196,5 +221,6 @@ while True:
         right_motor.spin_for(FORWARD, 180, DEGREES, DRIVE_SPEED)
         while -scroll(imu.heading()) <= 90: #90 Degree Turn
             right_motor.spin(FORWARD, DRIVE_MAX)
+
 
 
