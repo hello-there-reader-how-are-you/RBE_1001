@@ -101,34 +101,33 @@ def Approach_Fruit():
             arm_motor.spin(REVERSE, 0.5*(cy-target_y))
             max_height = max(fruit.height, max_height)
 
-        if max_height >= 100:
+        if max_height >= 105:
             arm_motor.stop()
             left_motor.stop()
             right_motor.stop()
             print("READY TO PICK FRUIT")
-            while True:
-                wait(1, SECONDS)
-            #Pick_Fruit()
+            Pick_Fruit()
 
 
 def Pick_Fruit():
     global HAVE_FRUIT
     left_motor.stop()
     right_motor.stop()
-    og_angle = imu.heading()
+    og_angle = scroll(imu.heading())
 
-    while imu.heading() > og_angle - 5: # Magic Number
+    while abs(scroll(imu.heading()) - og_angle) <= 45: # Magic Number
+        print(abs(scroll(imu.heading()) - og_angle))
         left_motor.spin(FORWARD, DRIVE_SPEED)
-        right_motor.spin(FORWARD, DRIVE_SPEED)
-        
+        right_motor.spin(REVERSE, DRIVE_SPEED)
+    left_motor.stop()
+    right_motor.stop()
 
     #left_motor.spin_for(FORWARD, 2, TURNS, DRIVE_SPEED, RPM, False)
     #right_motor.spin_for(FORWARD, 1, TURNS, DRIVE_SPEED, RPM, True)
     wait(3, SECONDS)
-    arm_motor.spin_for(FORWARD, 0.2, TURNS, True)
+    arm_motor.spin_for(FORWARD, 0.1, TURNS, True)
 
-
-    while bright.reflectivity() < 85:
+    while bright.reflectivity() < 80:
         left_motor.spin(REVERSE, DRIVE_SPEED, RPM)
         right_motor.spin(REVERSE, DRIVE_SPEED, RPM)
     left_motor.stop()
@@ -181,7 +180,7 @@ print("Arm Homed")
 
 arm_motor.set_max_torque(100, PERCENT)
 arm_motor.spin_for(FORWARD, 1.2, TURNS, True)
-HAVE_FRUIT = False
+HAVE_FRUIT = None
 #Idle:
 while True:
     #Detect Fruit
