@@ -22,7 +22,7 @@ Arm_PGain = 1
 # Brain should be defined by default
 brain=Brain()
 
-imu = Inertial(Ports.PORT13)
+imu = Inertial(Ports.PORT20)
 imu.calibrate()
 
 left_motor = Motor(Ports.PORT2, GearSetting.RATIO_18_1, True)
@@ -65,15 +65,14 @@ def detect_fruits():
     all_fruits.extend(eye.take_snapshot(eye__Orange))
     all_fruits.extend(eye.take_snapshot(eye__Purple))
     if all_fruits:
-        all_fruits.sort(key=lambda fruit: fruit.height) # Sorts fruit by hieght, analogus to distance
+        all_fruits.sort(key=lambda fruit: fruit.height, reverse=True) # Sorts fruit by hieght, analogus to distance
     return all_fruits
 
-approach_dt = 100 #MSEC
 def Approach_Fruit():
     arm_motor.set_max_torque(100, PERCENT)
     imu.set_heading(0)
-    target_x = (1/3) * X_RESOLUTION
-    target_y = (0.25) * Y_RESOLUTION
+    target_x = (1/2) * X_RESOLUTION
+    target_y = (1/3) * Y_RESOLUTION
     max_height = 0
     while True:
         print(max_height)
@@ -86,26 +85,37 @@ def Approach_Fruit():
 
             left_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED - Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
             right_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED + Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
-            #print("height =" , fruit.height)
+            print("height =" , fruit.height)
             arm_motor.spin(REVERSE, 0.5*(cy-target_y))
             max_height = max(fruit.height, max_height)
 
-        if max_height >= 50:
+        if max_height >= 100:
             arm_motor.stop()
             left_motor.stop()
             right_motor.stop()
             print("READY TO PICK FRUIT")
-            Pick_Fruit()
+            while True:
+                wait(1, SECONDS)
+            #Pick_Fruit()
 
 
 def Pick_Fruit():
     global HAVE_FRUIT
     left_motor.stop()
     right_motor.stop()
-    left_motor.spin_for(FORWARD, 2, TURNS, DRIVE_SPEED, RPM, False)
-    right_motor.spin_for(FORWARD, 1, TURNS, DRIVE_SPEED, RPM, True)
+    og_angle = imu.heading()
+
+    while imu.heading() > og_angle - 5: # Magic Number
+        left_motor.spin(FORWARD, DRIVE_SPEED)
+        right_motor.spin(FORWARD, DRIVE_SPEED)
+        
+
+    #left_motor.spin_for(FORWARD, 2, TURNS, DRIVE_SPEED, RPM, False)
+    #right_motor.spin_for(FORWARD, 1, TURNS, DRIVE_SPEED, RPM, True)
     wait(3, SECONDS)
-    arm_motor.spin_for(FORWARD, 0.15, TURNS, True)
+    arm_motor.spin_for(FORWARD, 0.2, TURNS, True)
+
+
     while bright.reflectivity() < 85:
         left_motor.spin(REVERSE, DRIVE_SPEED, RPM)
         right_motor.spin(REVERSE, DRIVE_SPEED, RPM)
@@ -137,6 +147,12 @@ def Deposit_Fruit_In_Basket():
     arm_motor.spin_for(REVERSE, 3, TURNS, 20, RPM, True)
     while True:
         wait(1, SECONDS)
+
+
+while arm_motor.torque() <= 1:
+    arm_motor.spin(REVERSE)
+arm_motor.stop()
+print("Arm Homed")
 
 arm_motor.set_max_torque(100, PERCENT)
 arm_motor.spin_for(FORWARD, 1.2, TURNS, True)
