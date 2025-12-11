@@ -173,9 +173,6 @@ def Deposit_Fruit_In_Basket():
         wait(1, SECONDS)
 
 arm_motor.set_max_torque(100, PERCENT)
-arm_motor.spin_for(FORWARD, 1, TURNS)
-while arm_motor.torque() <= 1:
-    arm_motor.spin(REVERSE)
 arm_motor.stop()
 print("Arm Homed")
 
@@ -207,7 +204,7 @@ while True:
     #Detect Wall: T turn left
     front_wall_distance = Front_Sonar.distance(MM)
     print(front_wall_distance)
-    if front_wall_distance <= -10: # MM to detect end of field, Should Be 400
+    if front_wall_distance <= 400: # MM to detect end of field, Should Be 400
         print("TURNING")
         left_motor.stop()
         right_motor.stop()

@@ -51,5 +51,7 @@ eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_
 wait(2, SECONDS)
 print("\033[2J")
 
+left_motor.spin(REVERSE, DRIVE_SPEED)
+right_motor.spin(REVERSE, DRIVE_SPEED)
 while True:
-    print(imu.heading())
+    wait(1, SECONDS)
