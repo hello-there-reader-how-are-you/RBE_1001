@@ -115,7 +115,7 @@ def Pick_Fruit():
     right_motor.stop()
     og_angle = scroll(imu.heading())
 
-    while abs(scroll(imu.heading()) - og_angle) <= 45: # Magic Number
+    while abs(scroll(imu.heading()) - og_angle) <= 8: # Magic Number
         print(abs(scroll(imu.heading()) - og_angle))
         left_motor.spin(FORWARD, DRIVE_SPEED)
         right_motor.spin(REVERSE, DRIVE_SPEED)
@@ -172,13 +172,13 @@ def Deposit_Fruit_In_Basket():
     while True:
         wait(1, SECONDS)
 
-
+arm_motor.set_max_torque(100, PERCENT)
+arm_motor.spin_for(FORWARD, 1, TURNS)
 while arm_motor.torque() <= 1:
     arm_motor.spin(REVERSE)
 arm_motor.stop()
 print("Arm Homed")
 
-arm_motor.set_max_torque(100, PERCENT)
 arm_motor.spin_for(FORWARD, 1.2, TURNS, True)
 HAVE_FRUIT = None
 #Idle:
