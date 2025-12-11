@@ -29,8 +29,4 @@ def Drive_To_Basket():
         left_motor.stop()
         right_motor.stop()
         print("Arrived in front of {CURRENT_FRUIT} basket")
-        # Optionally release fruit
-        hand_motor.spin(REVERSE, 0.5)
-        wait(1, SECONDS)
-        hand_motor.stop()
-        HAVE_FRUIT = False
+      
