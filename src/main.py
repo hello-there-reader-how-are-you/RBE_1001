@@ -45,8 +45,22 @@ Y_RESOLUTION = 240
 eye__Green = Colordesc(1, 64, 227, 108, 12, 0.91)
 eye__Purple = Colordesc(2, 153, 104, 159, 24, 0.68)
 eye__Orange = Colordesc(3, 244, 120, 91, 8, 0.14)
-# AI Vision Code Descriptions
-eye = AiVision(Ports.PORT19, eye__Green, eye__Purple, eye__Orange, AiVision.ALL_TAGS, AiVision.ALL_AIOBJS)
+
+# Basket Color Detection
+eye__COLOR5 = Colordesc(5, 245, 119, 195, 16, 0.47)
+eye_COLORG = Colordesc(1, 64, 227, 108, 10, 0.87)
+eye__COLORP = Colordesc(2, 153, 104, 159, 22, 0.62)
+eye__COLORO = Colordesc(3, 244, 120, 91, 6, 0.09)
+eye__Green_B = Codedesc(1, eye__COLOR5, eye_COLORG )
+eye__Orange_B = Codedesc(2, eye__COLOR5, eye__COLORO)
+eye__Purple_B = Codedesc(3, eye__COLOR5, eye__COLORP)
+
+eye = AiVision(
+    Ports.PORT19, 
+    eye__Green, eye__Purple, eye__Orange, 
+    eye__COLOR5, eye__Green_B, eye__Orange_B, eye__Purple_B, 
+    AiVision.ALL_TAGS
+)
 
 wait(2, SECONDS)
 print("\033[2J")
@@ -59,50 +73,72 @@ def scroll(theta):
     theta = ((theta-180)**2)**0.5 - 180
     return theta
 
-def detect_fruits():
+def sense_fruits():
     all_fruits = [] #[AiVisionObject]
     #all_fruits.extend(eye.take_snapshot(eye__Green))
     all_fruits.extend(eye.take_snapshot(eye__Orange))
     #all_fruits.extend(eye.take_snapshot(eye__Purple))
     if all_fruits:
-        all_fruits.sort(key=lambda fruit: fruit.height) # Sorts fruit by hieght, analogus to distance
-    return all_fruits
+        all_fruits.sort(key=lambda fruit: fruit.height, reverse=True) # Sorts fruit by hieght, analogus to distance
+        Approach_Fruit()
+
+def sense_baskets(current_fruit):
+    all_baskets = [] #[AiVisionObject]
+    match current_fruit.id:
+        case 1:
+            all_baskets.extend(eye.take_snapshot(eye__Green))
+        case 2:
+            all_baskets.extend(eye.take_snapshot(eye__Purple))
+        case 3:
+            all_baskets.extend(eye.take_snapshot(eye__Orange))
+    if all_baskets:
+        all_baskets.sort(key=lambda fruit: fruit.height, reverse=True) # Sorts fruit by hieght, analogus to distance
+        Drive_To_Basket(current_fruit)
+
+def home_arm():
+    arm_motor.set_max_torque(20, PERCENT)
+    arm_motor.set_timeout(2, SECONDS)
+    arm_motor.spin_for(FORWARD, 1.5, TURNS, True)
+    arm_motor.stop()
+    arm_motor.set_max_torque(100, PERCENT)
 
 approach_dt = 100 #MSEC
 def Approach_Fruit():
     imu.set_heading(0)
-    target_x = (1/3) * X_RESOLUTION
-    target_y = (0.1) * Y_RESOLUTION
-    flag = False
+    target_x = (1/2) * X_RESOLUTION
+    target_y = (1/3) * Y_RESOLUTION
     while True:
-        if (fruits := detect_fruits()):
+        fruits = sense_fruits()
+        if (fruits):
             fruit = fruits[0]
             cx = fruit.centerX
             cy = fruit.centerY
             print(cx,cy)
 
-            left_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED - Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
-            right_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED + Fruit_PGain*(cx - target_x), DRIVE_MAX)) #May be Flipped
-            #print("height =" , fruit.height)
+            left_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED - Fruit_PGain*(cx - target_x), DRIVE_MAX))
+            right_motor.spin(REVERSE, clamp(DRIVE_MIN, DRIVE_SPEED + Fruit_PGain*(cx - target_x), DRIVE_MAX))
+            print("height =" , fruit.height)
             arm_motor.spin(REVERSE, 0.5*(cy-target_y))
 
-            if fruit.height >= 70:
-                flag = True
-
-        else:
-            if flag:
+            if fruit.height >= 105:
+                arm_motor.stop()
                 left_motor.stop()
                 right_motor.stop()
                 print("READY TO PICK FRUIT")
-                Pick_Fruit()
+                Pick_Fruit(fruit)
 
-
-def Pick_Fruit():
-    global HAVE_FRUIT
+def Pick_Fruit(found_fruit):
     left_motor.stop()
     right_motor.stop()
-    left_motor.spin_for(FORWARD, 2, TURNS, DRIVE_SPEED, RPM, False)
-    right_motor.spin_for(FORWARD, 1, TURNS, DRIVE_SPEED, RPM, True)
+    og_angle = scroll(imu.heading())
+
+    while abs(scroll(imu.heading()) - og_angle) <= 8: # Magic Number
+        print(abs(scroll(imu.heading()) - og_angle))
+        left_motor.spin(FORWARD, DRIVE_SPEED)
+        right_motor.spin(REVERSE, DRIVE_SPEED)
+    left_motor.stop()
+    right_motor.stop()
+
     wait(3, SECONDS)
     arm_motor.spin_for(FORWARD, 0.3, TURNS, True)
     while bright.reflectivity() < 85:
@@ -116,69 +152,69 @@ def Pick_Fruit():
         hand_motor.spin(FORWARD)
         print("GRASPED")
     hand_motor.set_max_torque(0.2, TorqueUnits.NM)
-    HAVE_FRUIT = True
     print(Front_Sonar.distance(MM)) # DO NOT REMOVE
-    
-    dist = ((Front_Sonar.distance(MM)/10) * math.sin((math.pi / 180) * (imu.heading()-180))) #CM
-    dist = Front_Sonar.distance(MM) / 10 #CM
-    dist = dist - 20
-    dist = (5.5 * dist) / 11*math.pi
-    left_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, False)
-    right_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, True)
-    return
+    print(imu.heading())
 
+    while (dist := Front_Sonar.distance(MM) * math.sin(math.radians(imu.heading()-180))) > TARGET_WALL_DISTANCE:
+        print(dist)
+        left_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, False)
+        right_motor.spin_for(FORWARD, dist, TURNS, DRIVE_SPEED, RPM, False)
+    wall_follow(sense_baskets, found_fruit)
 
-
-def Drive_To_Basket():
-    #CODE NEEDED!!!!!!!!!!!
-    pass
-    Deposit_Fruit_In_Basket()
-
+def Drive_To_Basket(fruit):
+    basket = sense_baskets(fruit)
+    if basket:
+        basket_cx = basket.centerX
+        target_cx = X_RESOLUTION/2
+        while abs(basket_cx - target_cx) > 10:
+            basket = sense_baskets(fruit)
+            if basket:
+                basket_cx = basket.centerX
+                error = basket_cx - target_cx
+                left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Fruit_PGain*error, DRIVE_MAX))
+                right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Fruit_PGain*error, DRIVE_MAX))
+        left_motor.stop()
+        right_motor.stop()
+        Deposit_Fruit_In_Basket()
+        
 def Deposit_Fruit_In_Basket():
     arm_motor.spin_for(REVERSE, 3, TURNS, 20, RPM, True)
 
-arm_motor.set_max_torque(100, PERCENT)
+def wall_follow(viz = lambda: None, args = ()):
+    while True:
+        viz(*args)
+            
+        #Drive Fowards & Keep Dist. From wall
+        daedalus_wall_dist = clamp(0, Left_Sonar.distance(MM), 300)
+        #print(daedalus_wall_dist-TARGET_WALL_DISTANCE)
+        if (daedalus_wall_dist > TARGET_WALL_DISTANCE):
+            print("FAR")
+            left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
+            right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
+        else:
+            print("CLOSE")
+            left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
+            right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
+
+        #Detect Wall: T turn left
+        front_wall_distance = Front_Sonar.distance(MM)
+        print(front_wall_distance)
+        if front_wall_distance <= 400: # MM to detect end of field, Should Be 400
+            print("TURNING")
+            left_motor.stop()
+            right_motor.stop()
+            imu.set_heading(0)
+            wait(2)
+            print(-scroll(imu.heading()))
+            while -scroll(imu.heading()) <= 20: #90 Degree Turn
+                right_motor.spin(FORWARD, DRIVE_MAX)
+            left_motor.spin_for(FORWARD,180, DEGREES, DRIVE_SPEED)
+            right_motor.spin_for(FORWARD, 180, DEGREES, DRIVE_SPEED)
+            while -scroll(imu.heading()) <= 90: #90 Degree Turn
+                right_motor.spin(FORWARD, DRIVE_MAX)
+
+home_arm()
+print("Arm Homed")
 arm_motor.spin_for(FORWARD, 1.2, TURNS, True)
-HAVE_FRUIT = False
-#Idle:
-while True:
-    #Detect Fruit
-    if not HAVE_FRUIT:
-        if (fruits := detect_fruits()):
-            print("DETECTED A FRUIT")
-            Approach_Fruit()
-    if HAVE_FRUIT:
-        Drive_To_Basket()
-        
-    #Drive Fowards & Keep Dist. From wall
-    daedalus_wall_dist = clamp(0, Left_Sonar.distance(MM), 300)
-    #print(daedalus_wall_dist-TARGET_WALL_DISTANCE)
-    if (daedalus_wall_dist > TARGET_WALL_DISTANCE):
-        print("FAR")
-        left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
-        right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
-    else:
-        print("CLOSE")
-        left_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED + Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
-        right_motor.spin(FORWARD, clamp(DRIVE_MIN, DRIVE_SPEED - Wall_PGain*(daedalus_wall_dist-TARGET_WALL_DISTANCE), DRIVE_MAX))
 
-
-    #Detect Wall: T turn left
-    front_wall_distance = Front_Sonar.distance(MM)
-    print(front_wall_distance)
-    if front_wall_distance <= -10: # MM to detect end of field, Should Be 400
-        print("TURNING")
-        left_motor.stop()
-        right_motor.stop()
-        imu.set_heading(0)
-        wait(2)
-        print(-scroll(imu.heading()))
-        while -scroll(imu.heading()) <= 20: #90 Degree Turn
-            right_motor.spin(FORWARD, DRIVE_MAX)
-        left_motor.spin_for(FORWARD,180, DEGREES, DRIVE_SPEED)
-        right_motor.spin_for(FORWARD, 180, DEGREES, DRIVE_SPEED)
-        while -scroll(imu.heading()) <= 90: #90 Degree Turn
-            right_motor.spin(FORWARD, DRIVE_MAX)
-
-
-
+wall_follow(sense_fruits)
