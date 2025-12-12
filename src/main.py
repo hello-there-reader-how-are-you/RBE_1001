@@ -152,9 +152,11 @@ def Pick_Fruit(found_fruit):
     print("GRASPED")
     hand_motor.set_max_torque(0.2, TorqueUnits.NM)
 
-    left_motor.spin_for(FORWARD, 10, TURNS, DRIVE_SPEED, RPM, False)
-    right_motor.spin_for(FORWARD, 10, TURNS, DRIVE_SPEED, RPM, True)
-    wall_follow(detect_baskets, (found_fruit.id,), Drive_To_Basket, (found_fruit.id,))
+    t = 8
+    left_motor.spin_for(FORWARD, t, TURNS, DRIVE_SPEED, RPM, False)
+    right_motor.spin_for(FORWARD, t, TURNS, DRIVE_SPEED, RPM, True)
+    #wall_follow(detect_baskets, (found_fruit.id,), Drive_To_Basket, (found_fruit.id,))
+    wall_follow()
 
 
 def Drive_To_Basket(id):
@@ -189,6 +191,7 @@ def Deposit_Fruit_In_Basket():
 def wall_follow(viz = lambda: None, vargs = (), consequence = lambda: None, cargs=()):
     while True:
         if viz(*vargs):
+            wait(4, SECONDS)
             consequence(*cargs)
 
         #Drive Fowards & Keep Dist. From wall
